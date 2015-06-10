@@ -36,7 +36,6 @@
                       js2-mode
                       monochrome-theme
                       powerline
-                      php-extras
                       evil
                       org)
   "A list of packages that should be installed at launch")

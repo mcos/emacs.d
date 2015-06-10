@@ -238,7 +238,6 @@
 (add-to-list 'auto-mode-alist '("\\.php$" . php-mode))
 (add-hook 'php-mode-hook
           (lambda ()
-            (require 'php-extras)
             (require 'php-doc)
 
             (php-enable-psr2-coding-style)
