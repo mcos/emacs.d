@@ -1,0 +1,9 @@
+*
+# But don't ignore these specifics
+!.gitignore
+!README.md
+!init.el
+!mcos.el
+!eshell
+!lisp/
+!lisp/*
