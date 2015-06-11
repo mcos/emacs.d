@@ -183,6 +183,19 @@
 ;; Split org-agenda windows in a reasonable manner
 (setq org-agenda-window-setup 'current-window)
 
+;;; YAsnippet
+(require 'yasnippet)
+(setq yas-snippet-dirs (concat user-emacs-directory "snippets/"))
+
+(yas-reload-all)
+
+(define-key yas-minor-mode-map (kbd "<C-tab>") 'yas-expand)
+(define-key yas-minor-mode-map (kbd "<escape>") 'yas-exit-snippet)
+
+(setq yas-prompt-functions '(yas-completing-prompt
+                             yas-ido-prompt
+                             yas-dropdown-prompt))
+
 ;;;;;;;;;;;;;;;;;
 ;; Go Specific ;;
 ;;;;;;;;;;;;;;;;;
@@ -238,8 +251,8 @@
 (add-to-list 'auto-mode-alist '("\\.php$" . php-mode))
 (add-hook 'php-mode-hook
           (lambda ()
-            (require 'php-doc)
-
+            (yas-minor-mode t)
+            (yas-minor-mode-on)
             (php-enable-psr2-coding-style)
 
             (setq indent-tabs-mode nil)

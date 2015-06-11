@@ -37,7 +37,8 @@
                       monochrome-theme
                       powerline
                       evil
-                      org)
+                      org
+                      yasnippet)
   "A list of packages that should be installed at launch")
 
 ;; Make sure the packages are up to date
