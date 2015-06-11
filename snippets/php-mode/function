@@ -1,0 +1,38 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: function
+# key: fn
+# --
+/**
+ * Documentation
+ *
+ ${4:$
+    (let* ((indent
+            (concat "\n" (make-string (current-column) 32)))
+           (args
+            (mapconcat
+             '(lambda (x)
+                (if (not (string= (nth 0 x) ""))
+                    (concat "* @param " (nth 0 x) "")))
+             (mapcar
+              '(lambda (x)
+                 (mapcar
+                  '(lambda (x)
+                     (replace-regexp-in-string "[[:blank:]]*$" ""
+                      (replace-regexp-in-string "^[[:blank:]]*" "" x)))
+                  x))
+              (mapcar '(lambda (x) (split-string x "="))
+                      (split-string yas-text ",")))
+             indent)))
+      (if (string= args "")
+          (concat "")
+        (mapconcat
+         'identity
+         (list args)
+         "")))
+    }
+ * @return void
+ */
+${1:$$(yas-choose-value '("public " "public static " "private " "private static " "protected " "protected static "))}function ${3:new_function}(${4:$args})
+{
+  $0
+}
