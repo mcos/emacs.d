@@ -1,0 +1,10 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: constant
+# key: const
+# --
+/**
+ * Description
+ *
+ * @type ${2:string}
+ **/
+const ${1:CONST};
