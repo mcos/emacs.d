@@ -23,7 +23,7 @@ public function get${2:$(upcase-initials (camelcase-string yas-text))}()
 /**
  * Sets $4
  *
- * @param $3 $2 $4
+ * @param $3 $$2 $4
  * @return $this
  */
 public function set${2:$(upcase-initials (camelcase-string yas-text))}($3 $$2)

@@ -10,8 +10,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "gray7" :foreground "light gray" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 125 :width normal :foundry "nil" :family "DejaVu Sans Mono for Powerline")))))
-
+ '(default ((t (:inherit nil :stipple nil :background "gray7" :foreground "light gray" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 140 :width normal :foundry "nil" :family "Menlo")))))
 
 ;; Need some Common Lisp Here
 (require 'cl)
@@ -19,6 +18,10 @@
 ;; Evil Mode
 (require 'evil)
 (evil-mode 1)
+
+;; Evil Surround Mode
+(require 'evil-surround)
+(global-evil-surround-mode 1)
 
 ;; Powerline
 (require 'powerline)
@@ -43,9 +46,8 @@
 (setq company-tooltip-limit 20)
 (setq company-dabbrev-downcase nil)
 
-;; Auto Pair everything
-(require 'autopair)
-(autopair-global-mode) ;; enable autopair in all buffers
+(defun disable-company-mode () ;; sometimes we disable company mode
+  (setq company-mode nil))
 
 ;; Require Final Newline
 (setq mode-require-final-newline t)
@@ -64,6 +66,23 @@
 
 ;; Turn off the silly startup message
 (setq inhibit-startup-message t)
+
+;; Smart Parens
+;; (require 'smartparens-config)
+(smartparens-global-mode t)
+;; Add newline and position cursor appropriately when starting a
+;; curly brace block in C like modes
+
+(defun sp--my-create-newline-and-enter-sexp (&rest _ignored)
+  "Open a new brace or bracket expression, with relevant newlines and indent. "
+  (newline)
+  (indent-according-to-mode)
+  (forward-line -1)
+  (indent-according-to-mode))
+
+(sp-with-modes '(c-mode js-mode js2-mode php-mode)
+  (sp-local-pair "{" nil :post-handlers
+                 '((sp--my-create-newline-and-enter-sexp "RET"))))
 
 ;; Winner mode
 (winner-mode 1)
@@ -118,6 +137,17 @@
 
 ;; Column Numbers
 (column-number-mode t)
+
+;; Fill Column
+(setq fci-rule-width 2)
+(setq fci-rule-color "darkblue")
+
+;; Markdown Mode
+(add-hook 'markdown-mode-hook 'turn-on-auto-fill)
+(add-hook 'markdown-mode-hook
+          '(lambda() (set-fill-column 100)))
+(add-hook 'markdown-mode-hook 'fci-mode)
+(add-hook 'markdown-mode-hook 'disable-company-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; New Key Bindings ;;
@@ -183,12 +213,96 @@
 ;; Split org-agenda windows in a reasonable manner
 (setq org-agenda-window-setup 'current-window)
 
+;; Add a custom view
+(setq org-agenda-custom-commands
+      '(("W" "Weekly review"
+         ((agenda "" ((org-agenda-span 14)
+                      (org-agenda-start-day "-7d"))) ;; review upcoming deadlines and appointments
+                                           ;; type "l" in the agenda to review logged items
+          (stuck "") ;; review stuck projects as designated by org-stuck-projects
+          (todo "TODO") ;; review started items
+          (todo "STARTED") ;; review started items
+          (todo "WAITING"))) ;; review waiting items
+         ;; ...other commands here
+        ))
+
+;; Utility text functions
+;; ----------------------------------------------------------------------
+;; mapcar-head Like MAPCAR, but applies a different function to the first element.
+(defun mapcar-head (fn-head fn-rest list)
+      "like MAPCAR, but applies a different function to the first element."
+      (if list
+          (cons (funcall fn-head (car list)) (mapcar fn-rest (cdr list)))))
+
+;; ----------------------------------------------------------------------
+;; camelcase-region Given a region of text in snake_case format,
+;; changes it to camelCase.
+(defun camelcase-region (start end)
+  "Changes region from snake_case to camelCase"
+  (interactive "r")
+  (save-restriction (narrow-to-region start end)
+                    (goto-char (point-min))
+                    (while (re-search-forward "_\\(.\\)" nil t)
+                      (replace-match (upcase (match-string 1))))))
+
+;; ----------------------------------------------------------------------
+;; camelcase-string Given a string in snake_case format, change it to camelCase
+(defun camelcase-string (s)
+  "Changes string from snake_case to camelCase"
+  (mapconcat 'identity (mapcar-head
+                                '(lambda (word) (downcase word))
+                                '(lambda (word) (capitalize (downcase word)))
+                                (split-string s "_")) ""))
+
+;; ----------------------------------------------------------------------
+;; cadged largely from http://xahlee.org/emacs/elisp_idioms.html:
+;;
+(defun camelcase-word-or-region ()
+  "Changes word or region from snake_case to camelCase"
+  (interactive)
+  (let (pos1 pos2 bds)
+    (if (and transient-mark-mode mark-active)
+        (setq pos1 (region-beginning) pos2 (region-end))
+      (progn
+        (setq bds (bounds-of-thing-at-point 'symbol))
+        (setq pos1 (car bds) pos2 (cdr bds))))
+    (camelcase-region pos1 pos2)))
+
+;; ----------------------------------------------------------------------
+;; snakecase-region
+;; Given a region of text in camelCase format, changes it to snake_case.
+;;
+;; BUG: This is actually just a repeat of camelcase-region!
+(defun snakecase-region (start end)
+  "Changes region from camelCase to snake_case"
+  (interactive "r")
+  (save-restriction (narrow-to-region start end)
+                    (goto-char (point-min))
+                    (while (re-search-forward "_\\(.\\)" nil t)
+                      (replace-match (upcase (match-string 1))))))
+
+;; ----------------------------------------------------------------------
+;; Given a region of text in camelCase format, changes it to snake_case.
+(defun snakecase-word-or-region ()
+  "Changes word or region from camelCase to snake_case"
+  (interactive)
+  (let (pos1 pos2 bds)
+    (if (and transient-mark-mode mark-active)
+        (setq pos1 (region-beginning) pos2 (region-end))
+      (progn
+        (setq bds (bounds-of-thing-at-point 'symbol))
+        (setq pos1 (car bds) pos2 (cdr bds))))
+    (snakecase-region pos1 pos2)))
+
+
 ;;; YAsnippet
 (require 'yasnippet)
 (setq yas-snippet-dirs (concat user-emacs-directory "snippets/"))
 
 (yas-reload-all)
 
+(define-key yas-minor-mode-map [(tab)] nil)
+(define-key yas-minor-mode-map (kbd "TAB") nil)
 (define-key yas-minor-mode-map (kbd "<C-tab>") 'yas-expand)
 (define-key yas-minor-mode-map (kbd "<escape>") 'yas-exit-snippet)
 

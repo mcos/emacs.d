@@ -6,5 +6,5 @@
  * Description
  *
  * @type ${2:string}
- **/
+ */
 const ${1:CONST};

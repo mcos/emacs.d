@@ -15,7 +15,7 @@
                       idle-highlight-mode
                       markdown-mode
                       projectile
-                      autopair
+                      smartparens
                       exec-path-from-shell
                       company
                       company-go
@@ -37,8 +37,10 @@
                       monochrome-theme
                       powerline
                       evil
+                      evil-surround
                       org
-                      yasnippet)
+                      yasnippet
+                      fill-column-indicator)
   "A list of packages that should be installed at launch")
 
 ;; Make sure the packages are up to date
@@ -54,3 +56,15 @@
 (setq user-specific-config (concat dotfiles-dir "mcos.el"))
 
 (if (file-exists-p user-specific-config) (load user-specific-config))
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(default ((t (:inherit nil :stipple nil :background "gray7" :foreground "light gray" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 140 :width normal :foundry "nil" :family "Menlo")))))
