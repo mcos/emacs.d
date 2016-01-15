@@ -3,7 +3,7 @@
 # key: fn
 # --
 /**
- * Documentation
+ * ${6:Description}
  *
  ${4:$
     (let* ((indent
@@ -30,7 +30,7 @@
          (list args)
          "")))
     }
- * @return void
+ * @return ${5:void}
  */
 ${1:$$(yas-choose-value '("public " "public static " "private " "private static " "protected " "protected static "))}function ${3:new_function}(${4:$args})
 {

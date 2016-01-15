@@ -3,7 +3,7 @@
 # key: class
 # --
 /**
- * Documentation
+ * ${2:Description}
  */
 class ${1:Class_Name}
 {
