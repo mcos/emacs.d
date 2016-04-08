@@ -7,3 +7,9 @@ elpa/
 ido.last
 places
 projectile-bookmarks.eld
+projectile.cache
+ac-comphist.dat
+bookmarks
+recentf
+.yas-compiled-snippets.el
+gotools/
