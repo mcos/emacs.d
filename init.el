@@ -62,6 +62,7 @@
                       elixir-yasnippets
                       alchemist
                       nav
+                      ox-gfm ;; Export org as github flavored markdown
                       )
 
   "A list of packages that should be installed at launch")
