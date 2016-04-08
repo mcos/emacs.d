@@ -1,0 +1,12 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: robin_file_head
+# key: robin_doc_h
+# --
+<?php
+/**
+ * Robin API
+ *
+ * @copyright 2016 Robin Powered, Inc.
+ * @link https://robinpowered.com/
+ */
+$0

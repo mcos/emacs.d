@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: struct
+# key: type
+# contributor : @atotto
+# --
+// $1
+type $1 struct {
+	$0
+}
