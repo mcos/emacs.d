@@ -586,16 +586,46 @@
 )
 (add-hook 'web-mode-hook  'my-web-mode-hook)
 
+;; If there are two buffers, toggle between horizontal and vertical splitting
+(defun toggle-window-split ()
+  (message "%s" (count-windows))
+  (interactive)
+  (if (= (count-windows) 2)
+      (let* ((this-win-buffer (window-buffer))
+         (next-win-buffer (window-buffer (next-window)))
+         (this-win-edges (window-edges (selected-window)))
+         (next-win-edges (window-edges (next-window)))
+         (this-win-2nd (not (and (<= (car this-win-edges)
+                     (car next-win-edges))
+                     (<= (cadr this-win-edges)
+                     (cadr next-win-edges)))))
+         (splitter
+          (if (= (car this-win-edges)
+             (car (window-edges (next-window))))
+          'split-window-horizontally
+        'split-window-vertically)))
+    (delete-other-windows)
+    (let ((first-win (selected-window)))
+      (funcall splitter)
+      (if this-win-2nd (other-window 1))
+      (set-window-buffer (selected-window) this-win-buffer)
+      (set-window-buffer (next-window) next-win-buffer)
+      (select-window first-win)
+      (if this-win-2nd (other-window 1))))))
+
 ;;;;;;;;;;;;;;
 ;; Org Mode ;;
 ;;;;;;;;;;;;;;
-
 (require 'org)
 
-(global-set-key "\C-cc" 'org-capture)
-(global-set-key "\C-ca" 'org-agenda)
-(global-set-key "\C-cb" 'org-iswitchb)
+(define-key global-map (kbd "C-c c") 'org-capture)
+(define-key global-map (kbd "C-c a") 'org-agenda)
+(define-key global-map (kbd "C-c b") 'org-iswitchb)
+
 (define-key org-mode-map "\M-q" 'toggle-truncate-lines)
+
+;; force UTF-8
+(setq org-export-coding-system 'utf-8)
 
 (setq org-log-done t)
 
@@ -620,6 +650,10 @@
 ;; Split org-agenda windows in a reasonable manner
 (setq org-agenda-window-setup 'current-window)
 (setq org-agenda-files (list org-directory))
+
+;; Patch org-capture to use vertical split window
+(defadvice org-capture (after org-capture-toggle-window-split activate)
+  (toggle-window-split))
 
 (setq org-default-notes-file (concat org-directory "refile.org"))
 
