@@ -63,6 +63,7 @@
                       alchemist
                       nav
                       ox-gfm ;; Export org as github flavored markdown
+                      plantuml-mode
                       )
 
   "A list of packages that should be installed at launch")
@@ -216,24 +217,28 @@
 (require 'company)
 (add-hook 'after-init-hook 'global-company-mode)
 (setq company-idle-delay .2)           ; Set the popup delay to 0.25 seconds
-(setq company-minimum-prefix-length 1)
+(setq company-minimum-prefix-length 0)
 (setq company-tooltip-limit 20)
 (setq company-dabbrev-downcase nil)
 (setq company-require-match nil)
 
 ;; Special Theme Stuff
 ;; for company mode
-(custom-theme-set-faces
- 'minimal
-   `(company-tooltip ((t (:weight bold :background ,"gray10" :foreground ,"gray90"))))
-   `(company-tooltip-common ((t (:inherit company-tooltip :foreground ,"gray35"))))
-   `(company-tooltip-selection ((t (:weight bold :foreground ,"gray10" :background ,"gray90"))))
-   `(company-tooltip-common-selection ((t (:inherit company-tooltip-selection :foreground ,"gray35"))))
-   `(company-tooltip-annotation ((t (:foreground ,"gray90" :background ,"gray10"))))
-
-   `(company-scrollbar-fg ((t (:background ,"gray40"))))
-   `(company-scrollbar-bg ((t (:background ,"gray95"))))
-   `(company-preview ((t (:foreground , "red" :background nil)))))
+(custom-set-faces
+ '(company-preview
+   ((t (:foreground "darkgray" :underline t))))
+ '(company-preview-common
+   ((t (:inherit company-preview))))
+ '(company-tooltip
+   ((t (:background "lightgray" :foreground "black"))))
+ '(company-tooltip-selection
+   ((t (:background "steelblue" :foreground "white"))))
+ '(company-tooltip-common
+   ((((type x)) (:inherit company-tooltip :weight bold))
+    (t (:inherit company-tooltip))))
+ '(company-tooltip-common-selection
+   ((((type x)) (:inherit company-tooltip-selection :weight bold))
+    (t (:inherit company-tooltip-selection)))))
 
 ;; Smart Parens
 (smartparens-global-mode t)
@@ -468,14 +473,13 @@
 (require 'go-eldoc)
 (require 'go-rename)
 (require 'go-projectile)
+(require 'company-go)
 
 ;; Load in GOPATH from the environment
 (when (memq window-system '(mac ns))
   (exec-path-from-shell-initialize))
 (exec-path-from-shell-copy-env "GOPATH")
-
-;; Go-oracle
-(load-file (concat (getenv "GOPATH") "/src/golang.org/x/tools/cmd/oracle/oracle.el"))
+;; (exec-path-from-shell-copy-env "GOROOT") ;; Ensure goroot is imported for completion
 
 ;; Custom go-mode hook
 (add-hook 'go-mode-hook (lambda ()
@@ -486,15 +490,6 @@
 
   ;; Call Gofmt before saving
   (add-hook 'before-save-hook 'gofmt-before-save)
-
-  ;; Imenu & Speedbar
-  (setq imenu-generic-expression
-        '(("type" "^type *\\([^ \t\n\r\f]*\\)" 1)
-          ("func" "^func *\\(.*\\) {" 1)))
-  (imenu-add-to-menubar "Index")
-
-  ;; Go-Oracle-Mode
-  (go-oracle-mode)
 
   ;; Go-eldoc
   (go-eldoc-setup)
@@ -507,6 +502,13 @@
   (local-set-key (kbd "C-c t .") 'go-test-current-test)
   (local-set-key (kbd "C-c t f") 'go-test-current-file)
   (local-set-key (kbd "C-c t p") 'go-test-current-project)))
+
+;; company-mode for go
+(add-hook 'go-mode-hook 'company-mode)
+(add-hook 'go-mode-hook (lambda ()
+  (set (make-local-variable 'company-backends) '(company-go))
+  (company-mode)))
+
 
 ;;;;;;;;;;;;;;
 ;; PHP-Mode ;;
@@ -623,6 +625,8 @@
 (define-key global-map (kbd "C-c a") 'org-agenda)
 (define-key global-map (kbd "C-c b") 'org-iswitchb)
 
+(define-key org-mode-map (kbd"C-c l") 'org-store-link)
+
 (define-key org-mode-map "\M-q" 'toggle-truncate-lines)
 
 ;; force UTF-8
@@ -689,6 +693,11 @@
 ;; Targets include this file and any file contributing to the agenda - up to 9 levels deep
 (setq org-refile-targets (quote ((nil :maxlevel . 9)
                                  (org-agenda-files :maxlevel . 9))))
+
+(setq org-refile-use-outline-path 'file)
+(setq org-outline-path-complete-in-steps nil)
+(setq helm-org-format-outline-path nil)
+(setq org-refile-allow-creating-parent-nodes 'confirm)
 
 (setq company-global-modes '(not org-mode))
 
