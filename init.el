@@ -10,6 +10,7 @@
 
 ;; List of packages to use
 (defvar my-packages '(better-defaults
+                      use-package
                       magit
                       idle-highlight-mode
                       markdown-mode
@@ -40,8 +41,6 @@
                       json-mode
                       js-doc
                       coffee-mode
-                      monochrome-theme
-                      powerline
                       evil
                       evil-surround
                       evil-leader
@@ -55,15 +54,16 @@
                       ipython
                       ein
                       pydoc-info
-		      rich-minority
+                      rich-minority
                       minimal-theme
-                      airline-themes
                       elixir-mode
                       elixir-yasnippets
                       alchemist
                       nav
                       ox-gfm ;; Export org as github flavored markdown
-                      plantuml-mode
+                      org-pandoc
+                      yaml-mode
+                      protobuf-mode
                       )
 
   "A list of packages that should be installed at launch")
@@ -77,6 +77,9 @@
 
 ;; CONFIRM EXITING!
 (setq confirm-kill-emacs 'y-or-n-p)
+
+;; Don't show the menu bar
+(menu-bar-mode -1)
 
 ;; Set up our .emacs.d as a variable
 (setq dotfiles-dir (file-name-directory
@@ -99,7 +102,21 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "gray7" :foreground "light gray" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 140 :width normal :foundry "nil" :family "Menlo")))))
+ '(default ((t (:inherit nil :stipple nil :background "gray7" :foreground "light gray" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 150 :width normal :foundry "nil" :family "Menlo"))))
+ '(company-preview ((t (:foreground "darkgray" :underline t))))
+ '(company-preview-common ((t (:inherit company-preview))))
+ '(company-tooltip ((t (:background "lightgray" :foreground "black"))))
+ '(company-tooltip-common ((((type x)) (:inherit company-tooltip :weight bold)) (t (:inherit company-tooltip))))
+ '(company-tooltip-common-selection ((((type x)) (:inherit company-tooltip-selection :weight bold)) (t (:inherit company-tooltip-selection))))
+ '(company-tooltip-selection ((t (:background "steelblue" :foreground "white"))))
+ '(org-level-1 ((t (:inherit outline-1 :height 1.3))))
+ '(org-level-2 ((t (:inherit outline-2 :height 1.2))))
+ '(org-level-3 ((t (:inherit outline-3 :height 1.15))))
+ '(org-level-4 ((t (:inherit outline-4 :height 1.1))))
+ '(org-level-5 ((t (:inherit outline-4 :height 1.0))))
+ '(org-level-6 ((t (:inherit outline-4 :height 1.0))))
+ '(org-level-7 ((t (:inherit outline-4 :height 1.0))))
+ '(org-level-8 ((t (:inherit outline-4 :height 1.0)))))
 
 ;; Need some Common Lisp Here
 (require 'cl)
@@ -217,28 +234,14 @@
 (require 'company)
 (add-hook 'after-init-hook 'global-company-mode)
 (setq company-idle-delay .2)           ; Set the popup delay to 0.25 seconds
-(setq company-minimum-prefix-length 0)
+(setq company-minimum-prefix-length 1)
 (setq company-tooltip-limit 20)
 (setq company-dabbrev-downcase nil)
 (setq company-require-match nil)
 
 ;; Special Theme Stuff
 ;; for company mode
-(custom-set-faces
- '(company-preview
-   ((t (:foreground "darkgray" :underline t))))
- '(company-preview-common
-   ((t (:inherit company-preview))))
- '(company-tooltip
-   ((t (:background "lightgray" :foreground "black"))))
- '(company-tooltip-selection
-   ((t (:background "steelblue" :foreground "white"))))
- '(company-tooltip-common
-   ((((type x)) (:inherit company-tooltip :weight bold))
-    (t (:inherit company-tooltip))))
- '(company-tooltip-common-selection
-   ((((type x)) (:inherit company-tooltip-selection :weight bold))
-    (t (:inherit company-tooltip-selection)))))
+
 
 ;; Smart Parens
 (smartparens-global-mode t)
@@ -264,6 +267,24 @@
 (ws-butler-global-mode)
 
 ;; Save and Restore Desktop Sessions
+;; If we're running in a server, then name the desktop file after the server,
+;; so that other servers won't clash
+(when (daemonp)
+ (defadvice desktop-restore-file-buffer
+  (around my-desktop-restore-file-buffer-advice)
+  "Be non-interactive while starting a daemon."
+  (let ((noninteractive t))
+   ad-do-it))
+ (ad-activate 'desktop-restore-file-buffer)
+
+ (setq desktop-dirname             "~/.emacs.d/desktop/"
+  desktop-base-file-name      (concat (daemonp) ".desktop")
+  desktop-base-lock-name      (concat (daemonp) ".lock")
+  desktop-path                (list desktop-dirname)
+  desktop-save                t
+  desktop-files-not-to-save   "^$" ;reload tramp paths
+  desktop-load-locked-desktop t))
+
 (desktop-save-mode 1)
 
 ;; GRAB THE PATH
@@ -497,6 +518,10 @@
   (yas-minor-mode t)
   (yas-minor-mode-on)
 
+  ;; Set the tab width to 4, which shouldn't impact gofmt, but will make the
+  ;; editor spacing seem saner
+  (setq tab-width 4)
+
   ;; Key Bindings
   (local-set-key (kbd "M-.") 'godef-jump)
   (local-set-key (kbd "C-c t .") 'go-test-current-test)
@@ -509,6 +534,9 @@
   (set (make-local-variable 'company-backends) '(company-go))
   (company-mode)))
 
+;; make sure that go-test wraps lines
+(add-hook 'go-test-mode-hook (lambda ()
+                               (visual-line-mode t)))
 
 ;;;;;;;;;;;;;;
 ;; PHP-Mode ;;
@@ -580,6 +608,9 @@
 (add-to-list 'auto-mode-alist '("\\.jinja$" . web-mode))
 (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
 (add-to-list 'auto-mode-alist '("\\.less?\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.sass?\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.scss?\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.css?\\'" . web-mode))
 (sp-local-pair 'web-mode "{" "}" :actions nil)
 
 (defun my-web-mode-hook ()
@@ -591,7 +622,6 @@
 
 ;; If there are two buffers, toggle between horizontal and vertical splitting
 (defun toggle-window-split ()
-  (message "%s" (count-windows))
   (interactive)
   (if (= (count-windows) 2)
       (let* ((this-win-buffer (window-buffer))
@@ -616,14 +646,34 @@
       (select-window first-win)
       (if this-win-2nd (other-window 1))))))
 
+(defun org-capture-arrange-windows-horizontally ()
+  (interactive)
+  (if (= (count-windows) 2)
+      (let* ((this-win-buffer (window-buffer))
+         (next-win-buffer (window-buffer (next-window)))
+         (this-win-edges (window-edges (selected-window)))
+         (next-win-edges (window-edges (next-window)))
+         (this-win-2nd (not (and (<= (car this-win-edges)
+                     (car next-win-edges))
+                     (<= (cadr this-win-edges)
+                     (cadr next-win-edges))))))
+    (delete-other-windows)
+    (let ((first-win (selected-window)))
+      (split-window-horizontally)
+      (if this-win-2nd (other-window 1))
+      (set-window-buffer (selected-window) this-win-buffer)
+      (set-window-buffer (next-window) next-win-buffer)
+      (select-window first-win)
+      (if this-win-2nd (other-window 1))))))
+
 ;;;;;;;;;;;;;;
 ;; Org Mode ;;
 ;;;;;;;;;;;;;;
 (require 'org)
 
-(define-key global-map (kbd "C-c c") 'org-capture)
-(define-key global-map (kbd "C-c a") 'org-agenda)
-(define-key global-map (kbd "C-c b") 'org-iswitchb)
+(global-set-key (kbd "C-c c") 'org-capture)
+(global-set-key (kbd "C-c a") 'org-agenda)
+(global-set-key (kbd "C-c b") 'org-iswitchb)
 
 (define-key org-mode-map (kbd"C-c l") 'org-store-link)
 
@@ -636,31 +686,49 @@
 
 (setq org-directory "~/Dropbox/org/")
 
+;; TODO: Better display of this list
+;; Also, figure out colours for each tag
 (setq org-todo-keywords
-      (quote ((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
-              (sequence "WAITING(w@/!)" "HOLD(h@/!)" "|" "CANCELLED(c@/!)" "PHONE" "MEETING"))))
+  '((sequence
+     "TODO(t)"
+     "MAYBE(m)"
+     "NEXT(n)"
+     "STARTED(s)"
+     "WAITING(w@/!)"
+     "|"
+     "DONE(d!)"
+     "CANCELLED(c@/!)")))
 
 (setq org-use-fast-todo-selection t)
 (setq org-treat-S-cursor-todo-selection-as-state-change nil)
 
-(setq org-todo-state-tags-triggers
-      (quote (("CANCELLED" ("CANCELLED" . t))
-              ("WAITING" ("WAITING" . t))
-              ("HOLD" ("WAITING") ("HOLD" . t))
-              (done ("WAITING") ("HOLD"))
-              ("TODO" ("WAITING") ("CANCELLED") ("HOLD"))
-              ("NEXT" ("WAITING") ("CANCELLED") ("HOLD"))
-              ("DONE" ("WAITING") ("CANCELLED") ("HOLD")))))
+(setq org-src-fontify-natively t)
+(setq org-src-tab-acts-natively t)
+
+;; TODO: Figure out how to get a nice agenda view based on tags e.g. PERSONAL/WORK/ETC
+
+;; TODO: Figure out this
+;; (setq org-todo-state-tags-triggers
+;;       (quote (("CANCELLED" ("CANCELLED" . t))
+;;               ("WAITING" ("WAITING" . t))
+;;               ("HOLD" ("WAITING") ("HOLD" . t))
+;;               (done ("WAITING") ("HOLD"))
+;;               ("TODO" ("WAITING") ("CANCELLED") ("HOLD"))
+;;               ("NEXT" ("WAITING") ("CANCELLED") ("HOLD"))
+;;               ("STARTED" ("WAITING") ("CANCELLED") ("HOLD"))
+;;               ("DONE" ("WAITING") ("CANCELLED") ("HOLD")))))
 
 ;; Split org-agenda windows in a reasonable manner
 (setq org-agenda-window-setup 'current-window)
 (setq org-agenda-files (list org-directory))
 
 ;; Patch org-capture to use vertical split window
-(defadvice org-capture (after org-capture-toggle-window-split activate)
-  (toggle-window-split))
+(defadvice org-capture (after org-capture-arrange-windows activate)
+  (org-capture-arrange-windows-horizontally))
 
 (setq org-default-notes-file (concat org-directory "refile.org"))
+
+(setq org-agenda-view-columns-initially nil)
 
 ;; Capture templates for: TODO tasks, Notes, appointments, phone calls, meetings, and org-protocol
 (setq org-capture-templates
@@ -698,6 +766,9 @@
 (setq org-outline-path-complete-in-steps nil)
 (setq helm-org-format-outline-path nil)
 (setq org-refile-allow-creating-parent-nodes 'confirm)
+
+;; Style headlines a little better
+
 
 (setq company-global-modes '(not org-mode))
 
@@ -772,3 +843,25 @@
 ;; GPG Agent Info
 ;; Used by magit when determining whether to sign commits
 (exec-path-from-shell-copy-env "GPG_AGENT_INFO")
+
+;; ELIXIR
+(require 'elixir-mode)
+
+;; Must set up alchemist mode variables before enabling alchemist-mode
+;; Use a different keybinding prefix than C-c a
+(setq alchemist-key-command-prefix (kbd "C-c ,"))
+
+;; Add alchemist-mode as a hook to elixir, rather than using `require`
+(add-hook 'elixir-mode-hook 'alchemist-mode)
+
+(sp-with-modes '(elixir-mode)
+  (sp-local-pair "fn" "end"
+         :when '(("SPC" "RET"))
+         :actions '(insert navigate))
+  (sp-local-pair "do" "end"
+         :when '(("SPC" "RET"))
+         :post-handlers '(sp-ruby-def-post-handler)
+         :actions '(insert navigate)))
+
+;; NOTE: This is so that emacs doesn't go looking for a TAGS file in the wrong place.
+(setq tags-table-list nil)

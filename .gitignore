@@ -1,5 +1,5 @@
-.emacs.desktop
-.emacs.desktop.lock
+*.desktop
+*.lock
 .sx/
 auto-save-list/
 backups/
