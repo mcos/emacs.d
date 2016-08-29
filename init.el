@@ -96,28 +96,6 @@
     (if (eq (cdr aitem) oldmode)
         (setcdr aitem newmode))))
 
-;; Set fonts and stuff
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "gray7" :foreground "light gray" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 150 :width normal :foundry "nil" :family "Menlo"))))
- '(company-preview ((t (:foreground "darkgray" :underline t))))
- '(company-preview-common ((t (:inherit company-preview))))
- '(company-tooltip ((t (:background "lightgray" :foreground "black"))))
- '(company-tooltip-common ((((type x)) (:inherit company-tooltip :weight bold)) (t (:inherit company-tooltip))))
- '(company-tooltip-common-selection ((((type x)) (:inherit company-tooltip-selection :weight bold)) (t (:inherit company-tooltip-selection))))
- '(company-tooltip-selection ((t (:background "steelblue" :foreground "white"))))
- '(org-level-1 ((t (:inherit outline-1 :height 1.3))))
- '(org-level-2 ((t (:inherit outline-2 :height 1.2))))
- '(org-level-3 ((t (:inherit outline-3 :height 1.15))))
- '(org-level-4 ((t (:inherit outline-4 :height 1.1))))
- '(org-level-5 ((t (:inherit outline-4 :height 1.0))))
- '(org-level-6 ((t (:inherit outline-4 :height 1.0))))
- '(org-level-7 ((t (:inherit outline-4 :height 1.0))))
- '(org-level-8 ((t (:inherit outline-4 :height 1.0)))))
-
 ;; Need some Common Lisp Here
 (require 'cl)
 
@@ -131,10 +109,34 @@
 (setq ring-bell-function 'ignore)
 
 ;; Color Theme
+(custom-set-faces
+ '(default ((t (:inherit nil :stipple nil :background "#2b2b2b" :foreground "#a9b7c6" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 120 :width normal :foundry "nil" :family "Menlo"))))
+
+ '(font-lock-builtin-face ((t (:foreground "#a9b7c6" :weight bold))))
+ '(font-lock-constant-face ((t (:foreground "#a9b7c6" :weight bold))))
+ '(font-lock-keyword-face ((t (:foreground "#a9b7c6" :weight bold))))
+ '(font-lock-type-face ((t (:foreground "#a9b7c6" :slant italic))))
+ '(font-lock-function-name-face ((t (:foreground "#a9b7c6" :weight bold))))
+ '(font-lock-variable-name-face ((t (:foreground "#a9b7c6"))))
+
+ '(company-preview ((t (:foreground "darkgray" :underline t))))
+ '(company-preview-common ((t (:inherit company-preview))))
+ '(company-tooltip ((t (:background "lightgray" :foreground "black"))))
+ '(company-tooltip-common ((((type x)) (:inherit company-tooltip :weight bold)) (t (:inherit company-tooltip))))
+ '(company-tooltip-common-selection ((((type x)) (:inherit company-tooltip-selection :weight bold)) (t (:inherit company-tooltip-selection))))
+ '(company-tooltip-selection ((t (:background "steelblue" :foreground "white"))))
+
+ '(org-level-1 ((t (:foreground "#a9b7c6" :inherit outline-1 :height 1.3))))
+ '(org-level-2 ((t (:foreground "#a9b7c6" :inherit outline-2 :height 1.2))))
+ '(org-level-3 ((t (:foreground "#a9b7c6" :inherit outline-3 :height 1.15))))
+ '(org-level-4 ((t (:foreground "#a9b7c6" :inherit outline-4 :height 1.1))))
+ '(org-level-5 ((t (:foreground "#a9b7c6" :inherit outline-4 :height 1.0))))
+ '(org-level-6 ((t (:foreground "#a9b7c6" :inherit outline-4 :height 1.0))))
+ '(org-level-7 ((t (:foreground "#a9b7c6" :inherit outline-4 :height 1.0))))
+ '(org-level-8 ((t (:foreground "#a9b7c6" :inherit outline-4 :height 1.0))))
+ )
+
 (load-theme 'minimal t)
-(set-face-attribute 'fringe nil
-                      :foreground (face-foreground 'default)
-                      :background (face-background 'default))
 
 ;; Turn off the silly startup message
 (setq inhibit-startup-message t)
@@ -168,6 +170,11 @@
 (require 'evil-leader)
 (global-evil-leader-mode)
 (evil-leader/set-leader ",")
+
+(define-key evil-normal-state-map (kbd "C-h") 'evil-window-left)
+(define-key evil-normal-state-map (kbd "C-j") 'evil-window-down)
+(define-key evil-normal-state-map (kbd "C-k") 'evil-window-up)
+(define-key evil-normal-state-map (kbd "C-l") 'evil-window-right)
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; Multiple Cursors ;;
@@ -865,3 +872,11 @@
 
 ;; NOTE: This is so that emacs doesn't go looking for a TAGS file in the wrong place.
 (setq tags-table-list nil)
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   (quote
+    ("7838757247452123ec287fd978797f63294f6d8b26b300bb883131f5b6face54" "b749694d80fcaa9bd917c83a8f83729cdd2a79d2e60d384459eeca17b56b7bb6" "cc0dbb53a10215b696d391a90de635ba1699072745bf653b53774706999208e3" default))))
