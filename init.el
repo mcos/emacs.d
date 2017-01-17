@@ -50,10 +50,6 @@
                       web-mode
                       key-chord
                       ag
-                      python-mode
-                      ipython
-                      ein
-                      pydoc-info
                       rich-minority
                       minimal-theme
                       elixir-mode
@@ -64,6 +60,13 @@
                       org-pandoc
                       yaml-mode
                       protobuf-mode
+                      gotests
+                      terraform-mode
+                      go-impl
+                      godoctor
+                      helm-gtags
+                      gorepl-mode
+                      evil-visualstar
                       )
 
   "A list of packages that should be installed at launch")
@@ -110,22 +113,24 @@
 
 ;; Color Theme
 (custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
  '(default ((t (:inherit nil :stipple nil :background "#2b2b2b" :foreground "#a9b7c6" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 120 :width normal :foundry "nil" :family "Menlo"))))
-
- '(font-lock-builtin-face ((t (:foreground "#a9b7c6" :weight bold))))
- '(font-lock-constant-face ((t (:foreground "#a9b7c6" :weight bold))))
- '(font-lock-keyword-face ((t (:foreground "#a9b7c6" :weight bold))))
- '(font-lock-type-face ((t (:foreground "#a9b7c6" :slant italic))))
- '(font-lock-function-name-face ((t (:foreground "#a9b7c6" :weight bold))))
- '(font-lock-variable-name-face ((t (:foreground "#a9b7c6"))))
-
  '(company-preview ((t (:foreground "darkgray" :underline t))))
  '(company-preview-common ((t (:inherit company-preview))))
  '(company-tooltip ((t (:background "lightgray" :foreground "black"))))
+ '(company-tooltip-annotation ((((type x)) (:inherit company-tooltip-annotation :foreground "black")) (t (:inherit company-tooltip-annotation))))
  '(company-tooltip-common ((((type x)) (:inherit company-tooltip :weight bold)) (t (:inherit company-tooltip))))
  '(company-tooltip-common-selection ((((type x)) (:inherit company-tooltip-selection :weight bold)) (t (:inherit company-tooltip-selection))))
  '(company-tooltip-selection ((t (:background "steelblue" :foreground "white"))))
-
+ '(font-lock-builtin-face ((t (:foreground "#a9b7c6" :weight bold))))
+ '(font-lock-constant-face ((t (:foreground "#a9b7c6" :weight bold))))
+ '(font-lock-function-name-face ((t (:foreground "#a9b7c6" :weight bold))))
+ '(font-lock-keyword-face ((t (:foreground "#a9b7c6" :weight bold))))
+ '(font-lock-type-face ((t (:foreground "#a9b7c6" :slant italic))))
+ '(font-lock-variable-name-face ((t (:foreground "#a9b7c6"))))
  '(org-level-1 ((t (:foreground "#a9b7c6" :inherit outline-1 :height 1.3))))
  '(org-level-2 ((t (:foreground "#a9b7c6" :inherit outline-2 :height 1.2))))
  '(org-level-3 ((t (:foreground "#a9b7c6" :inherit outline-3 :height 1.15))))
@@ -133,8 +138,7 @@
  '(org-level-5 ((t (:foreground "#a9b7c6" :inherit outline-4 :height 1.0))))
  '(org-level-6 ((t (:foreground "#a9b7c6" :inherit outline-4 :height 1.0))))
  '(org-level-7 ((t (:foreground "#a9b7c6" :inherit outline-4 :height 1.0))))
- '(org-level-8 ((t (:foreground "#a9b7c6" :inherit outline-4 :height 1.0))))
- )
+ '(org-level-8 ((t (:foreground "#a9b7c6" :inherit outline-4 :height 1.0)))))
 
 (load-theme 'minimal t)
 
@@ -163,8 +167,10 @@
 ;; Use 'jk' as <Esc>
 (key-chord-define evil-insert-state-map  "jk" 'evil-normal-state)
 
-(setq-default blink-cursor-mode nil)
 (setq evil-insert-state-cursor '(bar))
+
+;; Don't blink the cursor
+(blink-cursor-mode 0)
 
 ;; Evil Leader Mode
 (require 'evil-leader)
@@ -176,6 +182,10 @@
 (define-key evil-normal-state-map (kbd "C-k") 'evil-window-up)
 (define-key evil-normal-state-map (kbd "C-l") 'evil-window-right)
 
+;; Evil visual star mode
+(require 'evil-visualstar)
+(global-evil-visualstar-mode)
+
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; Multiple Cursors ;;
 ;;;;;;;;;;;;;;;;;;;;;;
@@ -183,12 +193,12 @@
 (require 'multiple-cursors)
 
 ;; When you have an active region that spans multiple lines, the following will add a cursor to each line:
-(global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
+(global-set-key (kbd "C-S-c C-S-c") 'mcos/edit-lines)
 
 ;; When you want to add multiple cursors not based on continuous lines, but based on keywords in the buffer
-(global-set-key (kbd "C->") 'mc/mark-next-like-this)
-(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
-(global-set-key (kbd "C-c C-<") 'mc/mark-all-like-this)
+(global-set-key (kbd "C->") 'mcos/mark-next-like-this)
+(global-set-key (kbd "C-<") 'mcos/mark-previous-like-this)
+(global-set-key (kbd "C-c C-<") 'mcos/mark-all-like-this)
 
 ;; Smooth scrolling
 (setq redisplay-dont-pause t
@@ -245,6 +255,39 @@
 (setq company-tooltip-limit 20)
 (setq company-dabbrev-downcase nil)
 (setq company-require-match nil)
+(setq company-echo-delay 0)                          ; remove annoying blinking
+(setq company-begin-commands '(self-insert-command)) ; start autocompletion only after typing
+
+(eval-after-load 'company
+  '(progn
+     (define-key company-active-map (kbd "TAB") 'company-complete-common-or-cycle)
+     (define-key company-active-map (kbd "<tab>") 'company-complete-common-or-cycle)))
+
+(eval-after-load 'company
+  '(progn
+     (define-key company-active-map (kbd "S-TAB") 'company-select-previous)
+     (define-key company-active-map (kbd "<backtab>") 'company-select-previous)))
+
+(setq company-require-match 'never)
+
+(setq company-frontends
+      '(company-pseudo-tooltip-unless-just-one-frontend
+        company-preview-frontend
+        company-echo-metadata-frontend))
+
+(defvar company-mode/enable-yas t "Enable yasnippet for all backends.")
+
+(require 'company-yasnippet)
+(defun company/backend-with-yas (backend)
+  (if (or (not company-mode/enable-yas) (and (listp backend)    (member 'company-yasnippet backend)))
+      backend
+    (append (if (consp backend) backend (list backend))
+            '(:with company-yasnippet company-files))))
+
+(setq company-backends (mapcar #'company/backend-with-yas company-backends))
+
+;; Turn off company-mode in org-mode
+(setq company-global-modes '(not org-mode fundamental-mode magit-mode markdown-mode text-mode))
 
 ;; Special Theme Stuff
 ;; for company mode
@@ -304,7 +347,8 @@
 ;; Flycheck Syntax Checking
 (add-hook 'after-init-hook #'global-flycheck-mode)
 
-(setq-default flycheck-disabled-checkers '(go-build/ go-test json-jsonlist javascript-jshint))
+;; (setq-default flycheck-disabled-checkers '(go-build go-errcheck go-unconvert go-test json-jsonlist javascript-jshint))
+(setq-default flycheck-disabled-checkers '(json-jsonlist javascript-jshint))
 
 ;; Rename a file and a buffer
 (defun rename-file-and-buffer (new-name)
@@ -343,9 +387,11 @@
 (setq fci-rule-color "darkblue")
 
 ;; Markdown Mode
-(add-hook 'markdown-mode-hook 'turn-on-auto-fill)
+(add-hook 'markdown-mode-hook 'turn-off-auto-fill)
 (add-hook 'markdown-mode-hook
-          '(lambda() (set-fill-column 120)))
+          '(lambda() (
+                      set-fill-column 120
+                      visual-line-mode t )))
 (add-hook 'markdown-mode-hook 'fci-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;
@@ -372,9 +418,37 @@
 ;;;;;;;;;;;;;;;;
 (require 'helm)
 (require 'helm-config)
+(require 'helm-gtags)
 
 (helm-mode 1)
 (helm-autoresize-mode 1)
+
+;; customize
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   (quote
+    ("7838757247452123ec287fd978797f63294f6d8b26b300bb883131f5b6face54" "b749694d80fcaa9bd917c83a8f83729cdd2a79d2e60d384459eeca17b56b7bb6" "cc0dbb53a10215b696d391a90de635ba1699072745bf653b53774706999208e3" default)))
+ '(helm-gtags-auto-update t)
+ '(helm-gtags-ignore-case t)
+ '(helm-gtags-path-style (quote relative))
+ '(package-selected-packages
+   (quote
+    (evil-visualstar gorepl-mode php-extras ede-php-autoload deferred helm-go-package godoctor flycheck-protobuf helm-gtags ggtags php-eldoc yaml-mode xcscope ws-butler web-mode vagrant use-package terraform-mode tao-theme smartparens smart-mode-line-powerline-theme python-mode pydoc-info protobuf-mode powerline-evil plantuml-mode php-refactor-mode php-mode ox-gfm org-pandoc nav monochrome-theme minimal-theme minimal-session-saver memoize markdown-mode magit key-chord json-mode js2-refactor js-doc ipython idle-highlight-mode helm-projectile helm-open-github helm-ag gotests gotest go-projectile go-impl flycheck fill-column-indicator exec-path-from-shell evil-surround evil-leader etags-table etags-select elixir-yasnippets el-get ein dash-functional company-go coffee-mode better-defaults base16-theme alchemist airline-themes ag))))
+
+;; key bindings
+(eval-after-load "helm-gtags"
+  '(progn
+     (define-key helm-gtags-mode-map (kbd "M-t") 'helm-gtags-find-tag)
+     (define-key helm-gtags-mode-map (kbd "M-r") 'helm-gtags-find-rtag)
+     (define-key helm-gtags-mode-map (kbd "M-s") 'helm-gtags-find-symbol)
+     (define-key helm-gtags-mode-map (kbd "M-g M-p") 'helm-gtags-parse-file)
+     (define-key helm-gtags-mode-map (kbd "C-c <") 'helm-gtags-previous-history)
+     (define-key helm-gtags-mode-map (kbd "C-c >") 'helm-gtags-next-history)
+     (define-key helm-gtags-mode-map (kbd "M-,") 'helm-gtags-pop-stack)))
 
 ;; The default "C-x c" is quite close to "C-x C-c", which quits Emacs.
 ;; Changed to "C-c h". Note: We must set "C-c h" globally, because we
@@ -498,16 +572,19 @@
 ;; Go Specific ;;
 ;;;;;;;;;;;;;;;;;
 (require 'go-mode)
-(require 'go-eldoc)
 (require 'go-rename)
 (require 'go-projectile)
+(require 'gotests)
 (require 'company-go)
+(require 'gorepl-mode)
 
 ;; Load in GOPATH from the environment
 (when (memq window-system '(mac ns))
   (exec-path-from-shell-initialize))
 (exec-path-from-shell-copy-env "GOPATH")
-;; (exec-path-from-shell-copy-env "GOROOT") ;; Ensure goroot is imported for completion
+(exec-path-from-shell-copy-env "GOROOT")
+
+(setq company-go-show-annotation t)
 
 ;; Custom go-mode hook
 (add-hook 'go-mode-hook (lambda ()
@@ -518,9 +595,6 @@
 
   ;; Call Gofmt before saving
   (add-hook 'before-save-hook 'gofmt-before-save)
-
-  ;; Go-eldoc
-  (go-eldoc-setup)
 
   (yas-minor-mode t)
   (yas-minor-mode-on)
@@ -535,15 +609,22 @@
   (local-set-key (kbd "C-c t f") 'go-test-current-file)
   (local-set-key (kbd "C-c t p") 'go-test-current-project)))
 
-;; company-mode for go
-(add-hook 'go-mode-hook 'company-mode)
-(add-hook 'go-mode-hook (lambda ()
-  (set (make-local-variable 'company-backends) '(company-go))
-  (company-mode)))
+(add-hook 'go-mode-hook
+          (lambda ()
+            (set (make-local-variable 'company-backends) (mapcar #'company/backend-with-yas '(company-go)))
+            (company-mode)))
+
+(add-hook 'go-mode-hook 'flycheck-mode)
 
 ;; make sure that go-test wraps lines
 (add-hook 'go-test-mode-hook (lambda ()
                                (visual-line-mode t)))
+
+(define-key go-mode-map (kbd "C-c C-s") 'gorepl-run)
+(define-key go-mode-map (kbd "C-c C-z") 'gorepl-run)
+(define-key go-mode-map (kbd "C-c C-l") #'gorepl-run-load-current-file)
+(define-key go-mode-map (kbd "C-c C-e") #'gorepl-eval-region)
+(define-key go-mode-map (kbd "C-c C-r") #'gorepl-eval-line)
 
 ;;;;;;;;;;;;;;
 ;; PHP-Mode ;;
@@ -551,12 +632,14 @@
 
 ;; Note that there's a php doc in the custom directory loaded from https://gist.github.com/stesie/6564885
 (require 'php-mode)
+(require 'php-extras)
 (add-to-list 'auto-mode-alist '("\\.php$" . php-mode))
 (add-hook 'php-mode-hook
           (lambda ()
             (yas-minor-mode t)
             (yas-minor-mode-on)
             (php-enable-psr2-coding-style)
+            (helm-gtags-mode)
 
             (setq indent-tabs-mode nil)
             (setq tab-width 4)
@@ -566,7 +649,11 @@
             (setq-local flycheck-phpcs-standard     "PSR2")
             (setq-local flycheck-phpmd-rulesets     '("codesize" "design" "naming" "unusedcode"))))
 
-;;;;;;;;;;;;;;
+(add-hook 'php-mode-hook
+            (lambda ()
+              (set (make-local-variable 'company-backends)
+                   '((php-extras-company company-dabbrev-code) company-capf company-files))))
+;;;;;;;;;;;;;
 ;; JS2-Mode ;;
 ;;;;;;;;;;;;;;
 (add-to-list
@@ -689,41 +776,20 @@
 ;; force UTF-8
 (setq org-export-coding-system 'utf-8)
 
-(setq org-log-done t)
-
 (setq org-directory "~/Dropbox/org/")
+
+(setq org-default-notes-file (concat org-directory "refile.org"))
 
 ;; TODO: Better display of this list
 ;; Also, figure out colours for each tag
 (setq org-todo-keywords
-  '((sequence
-     "TODO(t)"
-     "MAYBE(m)"
-     "NEXT(n)"
-     "STARTED(s)"
-     "WAITING(w@/!)"
-     "|"
-     "DONE(d!)"
-     "CANCELLED(c@/!)")))
+      '((sequence "TODO" "IN-PROGRESS" "WAITING" "|" "DONE" "CANCELED")))
 
 (setq org-use-fast-todo-selection t)
 (setq org-treat-S-cursor-todo-selection-as-state-change nil)
 
 (setq org-src-fontify-natively t)
 (setq org-src-tab-acts-natively t)
-
-;; TODO: Figure out how to get a nice agenda view based on tags e.g. PERSONAL/WORK/ETC
-
-;; TODO: Figure out this
-;; (setq org-todo-state-tags-triggers
-;;       (quote (("CANCELLED" ("CANCELLED" . t))
-;;               ("WAITING" ("WAITING" . t))
-;;               ("HOLD" ("WAITING") ("HOLD" . t))
-;;               (done ("WAITING") ("HOLD"))
-;;               ("TODO" ("WAITING") ("CANCELLED") ("HOLD"))
-;;               ("NEXT" ("WAITING") ("CANCELLED") ("HOLD"))
-;;               ("STARTED" ("WAITING") ("CANCELLED") ("HOLD"))
-;;               ("DONE" ("WAITING") ("CANCELLED") ("HOLD")))))
 
 ;; Split org-agenda windows in a reasonable manner
 (setq org-agenda-window-setup 'current-window)
@@ -733,22 +799,118 @@
 (defadvice org-capture (after org-capture-arrange-windows activate)
   (org-capture-arrange-windows-horizontally))
 
-(setq org-default-notes-file (concat org-directory "refile.org"))
 
 (setq org-agenda-view-columns-initially nil)
 
 ;; Capture templates for: TODO tasks, Notes, appointments, phone calls, meetings, and org-protocol
 (setq org-capture-templates
-      (quote (("t" "Todo" entry (file (concat org-directory "refile.org"))
-               "* TODO %?\n%U\n%a\n")
+      (quote (("t" "Todo" entry (file (concat org-directory "todo.org"))
+               "* TODO %?\nCREATED: %U\n")
               ("n" "Note" entry (file (concat org-directory "refile.org"))
                "* %? :NOTE:\n%U\n%a\n")
               ("i" "Idea" entry (file (concat org-directory "refile.org"))
                "* %? :IDEA:\n%U\n%a\n")
-              ("j" "Journal" entry (file+datetree (concat org-directory "diary.org"))
+              ("d" "Diary" entry (file+datetree (concat org-directory "diary.org"))
                "* %?\n%U\n")
+              ("b" "Book" entry (file (concat org-directory "books.org"))
+               "* TODO %\\1 - %\\2%?\n%U\n:AUTHOR: %^{AUTHOR}\n:TITLE: %^{TITLE}\n")
               ("m" "Meeting" entry (file (concat org-directory "refile.org"))
                "* MEETING with %? :MEETING:\n%U"))))
+
+(setq org-agenda-skip-scheduled-if-done t)
+
+;; Custom Agenda Views
+(setq org-agenda-custom-commands
+      '(("d" "Daily agenda and all TODOs"
+         ((tags "PRIORITY=\"A\""
+                ((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
+                 (org-agenda-overriding-header "High-priority unfinished tasks:")))
+          (agenda ""
+                  ((org-agenda-ndays 1)
+                   (org-agenda-skip-function '(org-agenda-skip-entry-if 'nottodo 'any))))
+          (alltodo ""
+                   ((org-agenda-skip-function '(or (mcos/org-skip-if-habit)
+                                                   (mcos/org-skip-if-priority ?A)
+                                                   (org-agenda-skip-if nil '(scheduled deadline))))
+                    (org-agenda-overriding-header "\nALL normal priority tasks:")))
+
+          (agenda ""
+                  ((org-agenda-ndays 1)
+                   (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'any))
+                   (org-agenda-overriding-header "\nReminders for today:")))
+          (todo "DONE"
+                ((org-agenda-skip-function 'mcos/org-skip-if-not-closed-today)
+                 (org-agenda-overriding-header "\nClosed today:"))
+                )
+          )
+         ((org-agenda-compact-blocks t)))
+        ("w" "Weekly agenda and all TODOs"
+         ((tags "PRIORITY=\"A\""
+                ((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
+                 (org-agenda-overriding-header "High-priority unfinished tasks:")))
+          (agenda ""
+                  ((org-agenda-span 'week)
+                   (org-agenda-start-on-weekday 0)
+                   (org-agenda-skip-function '(org-agenda-skip-entry-if 'nottodo 'any))))
+          (alltodo ""
+                   ((org-agenda-skip-function '(or (mcos/org-skip-if-habit)
+                                                   (mcos/org-skip-if-priority ?A)
+                                                   (org-agenda-skip-if nil '(scheduled deadline))))
+                    (org-agenda-overriding-header "\nALL normal priority tasks:")))
+
+          (agenda ""
+                  ((org-agenda-span 'week)
+                   (org-agenda-start-on-weekday 0)
+                   (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'any))
+                   (org-agenda-overriding-header "\nReminders for this week:")))
+          (todo "DONE"
+                ((org-agenda-overriding-header "\nClosed this week:"))
+                )
+          )
+         ((org-agenda-compact-blocks t)))))
+
+(add-to-list 'org-agenda-custom-commands
+             `("f." "Today"
+               ((agenda ""
+                        ((org-agenda-entry-types '(:timestamp :sexp))
+                         (org-agenda-overriding-header
+                          (concat "CALENDAR Today"
+                                  (format-time-string "%a %d" (current-time))))
+                         (org-agenda-span 'day)))
+                (tags-todo "DEADLINE=\"<+0d>\""
+                           ((org-agenda-overriding-header "DUE TODAY")
+                            (org-agenda-skip-function
+                             '(org-agenda-skip-if nil '(deadline)))
+                            (org-agenda-sorting-strategy '(priority-down))))
+                (tags-todo "DEADLINE<\"<+0d>\""
+                           ((org-agenda-overriding-header "OVERDUE")
+                            (org-agenda-skip-function
+                             '(org-agenda-skip-if nil '(deadline)))
+                            (org-agenda-sorting-strategy '(priority-down))))
+                (agenda ""
+                        ((org-agenda-entry-types '(:scheduled))
+                         (org-agenda-overriding-header "SCHEDULED")
+                         (org-agenda-skip-function
+                          '(org-agenda-skip-entry-if 'todo 'done))
+                         (org-agenda-sorting-strategy
+                          '(priority-down time-down))
+                         (org-agenda-span 'day)
+                         (org-agenda-start-on-weekday nil)
+                         (org-agenda-time-grid nil)))
+                (todo "DONE"
+                      ((org-agenda-skip-function 'mcos/org-skip-if-not-closed-today)
+                       (org-agenda-overriding-header "COMPLETED TODAY"))))
+               ((org-agenda-format-date "")
+                (org-agenda-start-with-clockreport-mode nil)
+                (org-agenda-compact-blocks nil))) t)
+
+;; Set up a strike-through font for "DONE" items
+(set-face-attribute 'org-agenda-done nil :strike-through t)
+
+(defadvice enable-theme (after org-strike-done activate)
+  "Setup org-agenda-done faces to have strike-through on"
+  (and (message "Running advice")
+       (set-face-attribute 'org-agenda-done nil :strike-through t)))
 
 ;; Optimize indentation for outline-style documents
 (setq org-startup-indented t)
@@ -764,6 +926,8 @@
 ;; wrap the lines correctly
 (setq org-startup-truncated nil)
 
+(setq org-blank-before-new-entry (quote ((heading) (plain-list-item))))
+
 ;; Refile
 ;; Targets include this file and any file contributing to the agenda - up to 9 levels deep
 (setq org-refile-targets (quote ((nil :maxlevel . 9)
@@ -773,79 +937,48 @@
 (setq org-outline-path-complete-in-steps nil)
 (setq helm-org-format-outline-path nil)
 (setq org-refile-allow-creating-parent-nodes 'confirm)
+(setq org-enforce-todo-dependencies t)
 
-;; Style headlines a little better
+;; Logging state changes
+(setq org-log-done t)
+(setq org-log-reschedule (quote time))
+(setq org-log-redeadline (quote time))
+(setq org-log-into-drawer t)
 
+(defun mcos/org-skip-if-not-closed-today (&optional subtree)
+  "Skip entries that were not closed today.
+Skip the current entry unless SUBTREE is not nil, in which case skip
+the entire subtree."
+  (let ((end (if subtree (subtree-end (save-excursion (org-end-of-subtree t)))
+               (save-excursion (progn (outline-next-heading) (1- (point))))))
+        (today-prefix (format-time-string "%Y-%m-%d")))
+    (if (save-excursion
+          (and (re-search-forward org-closed-time-regexp end t)
+               (string= (substring (match-string-no-properties 1) 0 10) today-prefix)))
+        nil
+      end)))
 
-(setq company-global-modes '(not org-mode))
+(defun mcos/org-skip-if-habit (&optional subtree)
+  "Skip an agenda entry if it has a STYLE property equal to \"habit\".
+Skip the current entry unless SUBTREE is not nil, in which case skip
+the entire subtree."
+  (let ((end (if subtree (subtree-end (save-excursion (org-end-of-subtree t)))
+                (save-excursion (progn (outline-next-heading) (1- (point)))))))
+    (if (string= (org-entry-get nil "STYLE") "habit")
+        end
+      nil)))
 
-;;;;;;;;;;;;
-;; Python ;;
-;;;;;;;;;;;;
-(require 'python)
-
-(setq
- python-shell-interpreter "ipython"
- python-shell-prompt-regexp "In \\[[0-9]+\\]: "
- python-shell-prompt-output-regexp "Out\\[[0-9]+\\]: "
- python-shell-completion-setup-code
-   "from IPython.core.completerlib import module_completion"
- python-shell-completion-module-string-code
-   "';'.join(module_completion('''%s'''))\n"
- python-shell-completion-string-code
-   "';'.join(get_ipython().Completer.all_completions('''%s'''))\n")
-
-
-;; -----------------------------
-;; emacs IPython notebook config
-;; -----------------------------
-
-; use autocompletion, but don't start to autocomplete after a dot
-(setq ein:complete-on-dot -1)
-(setq ein:use-auto-complete 1)
-
-; set python console args
-(setq ein:console-args
-      '("--gui=osx" "--matplotlib=osx" "--colors=Linux"))
-
-; timeout settings
-(setq ein:query-timeout 1000)
-
-; IPython notebook
-(require 'ein)
-
-; shortcut function to load notebooklist
-(defun load-ein ()
-  (ein:notebooklist-load)
-  (interactive)
-  (ein:notebooklist-open))
-
-
-;; ------------------
-;; misc python config
-;; ------------------
-
-; pydoc info
-(require 'pydoc-info)
-
-; Set PYTHONPATH, because we don't load .bashrc
-(defun set-python-path-from-shell-PYTHONPATH ()
-  (let ((path-from-shell (shell-command-to-string "$SHELL -i -c 'echo $PYTHONPATH'")))
-    (setenv "PYTHONPATH" path-from-shell)))
-
-(if window-system (set-python-path-from-shell-PYTHONPATH))
-
-(setq auto-mode-alist
-      (append
-       (list '("\\.pyx" . python-mode)
-             '("SConstruct" . python-mode))
-       auto-mode-alist))
-
-; keybindings
-(eval-after-load 'python
-  '(define-key python-mode-map (kbd "C-c !") 'python-shell-switch-to-shell))
-(eval-after-load 'python
-  '(define-key python-mode-map (kbd "C-c |") 'python-shell-send-region))
+(defun mcos/org-skip-if-priority (priority &optional subtree)
+  "Skip an agenda item if it has a priority of PRIORITY.
+PRIORITY may be one of the characters ?A, ?B, or ?C.
+Skips the current entry unless SUBTREE is not nil."
+  (let ((end (if subtree (subtree-end (save-excursion (org-end-of-subtree t)))
+                (save-excursion (progn (outline-next-heading) (1- (point))))))
+        (pri-value (* 1000 (- org-lowest-priority priority)))
+        (pri-current (org-get-priority (thing-at-point 'line t))))
+    (if (= pri-value pri-current)
+        end
+      nil)))
 
 ;; GPG Agent Info
 ;; Used by magit when determining whether to sign commits
@@ -870,13 +1003,17 @@
          :post-handlers '(sp-ruby-def-post-handler)
          :actions '(insert navigate)))
 
+;; Protobuf
+(require 'protobuf-mode)
+(defconst my-protobuf-style
+  '((c-basic-offset . 2)
+    (indent-tabs-mode . nil)))
+
+(add-hook 'protobuf-mode-hook
+  (lambda () (c-add-style "my-style" my-protobuf-style t)))
+
+;; Terraform
+(require 'terraform-mode)
+
 ;; NOTE: This is so that emacs doesn't go looking for a TAGS file in the wrong place.
 (setq tags-table-list nil)
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(custom-safe-themes
-   (quote
-    ("7838757247452123ec287fd978797f63294f6d8b26b300bb883131f5b6face54" "b749694d80fcaa9bd917c83a8f83729cdd2a79d2e60d384459eeca17b56b7bb6" "cc0dbb53a10215b696d391a90de635ba1699072745bf653b53774706999208e3" default))))
