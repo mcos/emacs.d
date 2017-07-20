@@ -3,7 +3,7 @@
 # key: func
 # contributor : @atotto
 # --
-//
-func ($2) $1() {
+// $1 $5
+func ${4:$(when (> (length yas-text) 0) "(")}$4${4:$(when (> (length yas-text) 0) ") ")}$1($2) ${3:$(when (> (length yas-text) 0) "(")}$3${3:$(when (> (length yas-text) 0) ") ")}{
 	$0
 }

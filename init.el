@@ -67,6 +67,17 @@
                       helm-gtags
                       gorepl-mode
                       evil-visualstar
+                      gist
+                      dockerfile-mode
+                      helm-cider
+                      evil-paredit
+                      clj-refactor
+                      flycheck-clojure
+                      hl-sexp
+                      groovy-mode
+                      python-mode
+                      py-autopep8
+                      elpy
                       )
 
   "A list of packages that should be installed at launch")
@@ -117,7 +128,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "#2b2b2b" :foreground "#a9b7c6" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 120 :width normal :foundry "nil" :family "Menlo"))))
+ '(default ((t (:inherit nil :stipple nil :background "#2b2b2b" :foreground "#a9b7c6" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 130 :width normal :foundry "nil" :family "Menlo"))))
  '(company-preview ((t (:foreground "darkgray" :underline t))))
  '(company-preview-common ((t (:inherit company-preview))))
  '(company-tooltip ((t (:background "lightgray" :foreground "black"))))
@@ -126,6 +137,8 @@
  '(company-tooltip-common-selection ((((type x)) (:inherit company-tooltip-selection :weight bold)) (t (:inherit company-tooltip-selection))))
  '(company-tooltip-selection ((t (:background "steelblue" :foreground "white"))))
  '(font-lock-builtin-face ((t (:foreground "#a9b7c6" :weight bold))))
+ '(font-lock-comment-delimiter-face ((t (:foreground "gray50" :slant italic))))
+ '(font-lock-comment-face ((t (:foreground "gray60" :slant italic))))
  '(font-lock-constant-face ((t (:foreground "#a9b7c6" :weight bold))))
  '(font-lock-function-name-face ((t (:foreground "#a9b7c6" :weight bold))))
  '(font-lock-keyword-face ((t (:foreground "#a9b7c6" :weight bold))))
@@ -309,6 +322,32 @@
   (sp-local-pair "{" nil :post-handlers
                  '((sp--my-create-newline-and-enter-sexp "RET"))))
 
+;; From https://github.com/Fuco1/smartparens/issues/286
+(defun sp--org-skip-markup (ms mb me)
+  (save-excursion
+    (and (progn
+           (goto-char mb)
+           (save-match-data (looking-back "\\sw\\|\\s_\\|\\s.")))
+         (progn
+           (goto-char me)
+           (save-match-data (looking-at "\\sw\\|\\s_\\|\\s."))))))
+
+;; From https://github.com/Fuco1/smartparens/issues/286
+(sp-with-modes sp--lisp-modes
+  ;; disable ', it's the quote character!
+  (sp-local-pair "'" nil :actions nil)
+  ;; also only use the pseudo-quote inside strings where it serve as
+  ;; hyperlink.
+  (sp-local-pair "`" "'" :when '(sp-in-string-p sp-in-comment-p))
+  (sp-local-pair "`" nil
+                 :skip-match (lambda (ms mb me)
+                               (cond
+                                ((equal ms "'")
+                                 (or (sp--org-skip-markup ms mb me)
+                                     (not (sp-point-in-string-or-comment))))
+                                (t (not (sp-point-in-string-or-comment)))))))
+
+
 ;; Winner mode
 (winner-mode 1)
 
@@ -347,7 +386,7 @@
 ;; Flycheck Syntax Checking
 (add-hook 'after-init-hook #'global-flycheck-mode)
 
-;; (setq-default flycheck-disabled-checkers '(go-build go-errcheck go-unconvert go-test json-jsonlist javascript-jshint))
+; (setq-default flycheck-disabled-checkers '(go-build go-errcheck go-unconvert go-test json-jsonlist javascript-jshint))
 (setq-default flycheck-disabled-checkers '(json-jsonlist javascript-jshint))
 
 ;; Rename a file and a buffer
@@ -435,9 +474,11 @@
  '(helm-gtags-auto-update t)
  '(helm-gtags-ignore-case t)
  '(helm-gtags-path-style (quote relative))
+ '(nav-width 25)
  '(package-selected-packages
    (quote
-    (evil-visualstar gorepl-mode php-extras ede-php-autoload deferred helm-go-package godoctor flycheck-protobuf helm-gtags ggtags php-eldoc yaml-mode xcscope ws-butler web-mode vagrant use-package terraform-mode tao-theme smartparens smart-mode-line-powerline-theme python-mode pydoc-info protobuf-mode powerline-evil plantuml-mode php-refactor-mode php-mode ox-gfm org-pandoc nav monochrome-theme minimal-theme minimal-session-saver memoize markdown-mode magit key-chord json-mode js2-refactor js-doc ipython idle-highlight-mode helm-projectile helm-open-github helm-ag gotests gotest go-projectile go-impl flycheck fill-column-indicator exec-path-from-shell evil-surround evil-leader etags-table etags-select elixir-yasnippets el-get ein dash-functional company-go coffee-mode better-defaults base16-theme alchemist airline-themes ag))))
+    (highlight-indentation anaconda-mode elpy py-autopep8 groovy-mode hl-sexp flycheck-clojure clj-refactor evil-paredit helm-cider cider dockerfile-mode gist evil-visualstar gorepl-mode php-extras ede-php-autoload deferred helm-go-package godoctor flycheck-protobuf helm-gtags ggtags php-eldoc yaml-mode xcscope ws-butler web-mode vagrant use-package terraform-mode tao-theme smartparens smart-mode-line-powerline-theme python-mode pydoc-info protobuf-mode powerline-evil plantuml-mode php-refactor-mode php-mode ox-gfm org-pandoc nav monochrome-theme minimal-theme minimal-session-saver memoize markdown-mode magit key-chord json-mode js2-refactor js-doc ipython idle-highlight-mode helm-projectile helm-open-github helm-ag gotests gotest go-projectile go-impl flycheck fill-column-indicator exec-path-from-shell evil-surround evil-leader etags-table etags-select elixir-yasnippets el-get ein dash-functional company-go coffee-mode better-defaults base16-theme alchemist airline-themes ag)))
+ '(show-paren-mode t))
 
 ;; key bindings
 (eval-after-load "helm-gtags"
@@ -602,6 +643,9 @@
   ;; Set the tab width to 4, which shouldn't impact gofmt, but will make the
   ;; editor spacing seem saner
   (setq tab-width 4)
+
+  ;; eldoc shows the signature of the function at point in the status bar.
+  (go-eldoc-setup)
 
   ;; Key Bindings
   (local-set-key (kbd "M-.") 'godef-jump)
@@ -793,7 +837,7 @@
 
 ;; Split org-agenda windows in a reasonable manner
 (setq org-agenda-window-setup 'current-window)
-(setq org-agenda-files (list org-directory))
+(setq org-agenda-files (list org-directory (concat org-directory "robin/")))
 
 ;; Patch org-capture to use vertical split window
 (defadvice org-capture (after org-capture-arrange-windows activate)
@@ -820,91 +864,108 @@
 (setq org-agenda-skip-scheduled-if-done t)
 
 ;; Custom Agenda Views
+;; (setq org-agenda-custom-commands
+;;       '(("d" "Daily agenda and all TODOs"
+;;          ((tags "PRIORITY=\"A\""
+;;                 ((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
+;;                  (org-agenda-overriding-header "High-priority unfinished tasks:")))
+;;           (agenda ""
+;;                   ((org-agenda-ndays 1)
+;;                    (org-agenda-skip-function '(org-agenda-skip-entry-if 'nottodo 'any))))
+;;           (alltodo ""
+;;                    ((org-agenda-skip-function '(or (mcos/org-skip-if-habit)
+;;                                                    (mcos/org-skip-if-priority ?A)
+;;                                                    (org-agenda-skip-if nil '(scheduled deadline))))
+;;                     (org-agenda-overriding-header "\nALL normal priority tasks:")))
+
+;;           (agenda ""
+;;                   ((org-agenda-ndays 1)
+;;                    (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'any))
+;;                    (org-agenda-overriding-header "\nReminders for today:")))
+;;           (todo "DONE"
+;;                 ((org-agenda-skip-function 'mcos/org-skip-if-not-closed-today)
+;;                  (org-agenda-overriding-header "\nClosed today:"))
+;;                 )
+;;           )
+;;          ((org-agenda-compact-blocks t)))
+;;         ("w" "Weekly agenda and all TODOs"
+;;          ((tags "PRIORITY=\"A\""
+;;                 ((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
+;;                  (org-agenda-overriding-header "High-priority unfinished tasks:")))
+;;           (agenda ""
+;;                   ((org-agenda-span 'week)
+;;                    (org-agenda-start-on-weekday 0)
+;;                    (org-agenda-skip-function '(org-agenda-skip-entry-if 'nottodo 'any))))
+;;           (alltodo ""
+;;                    ((org-agenda-skip-function '(or (mcos/org-skip-if-habit)
+;;                                                    (mcos/org-skip-if-priority ?A)
+;;                                                    (org-agenda-skip-if nil '(scheduled deadline))))
+;;                     (org-agenda-overriding-header "\nALL normal priority tasks:")))
+
+;;           (agenda ""
+;;                   ((org-agenda-span 'week)
+;;                    (org-agenda-start-on-weekday 0)
+;;                    (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'any))
+;;                    (org-agenda-overriding-header "\nReminders for this week:")))
+;;           (todo "DONE"
+;;                 ((org-agenda-overriding-header "\nClosed this week:"))
+;;                 )
+;;           )
+;;          ((org-agenda-compact-blocks t)))))
+
+(setq org-agenda-skip-scheduled-if-deadline-is-shown t)
+
 (setq org-agenda-custom-commands
-      '(("d" "Daily agenda and all TODOs"
-         ((tags "PRIORITY=\"A\""
-                ((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
-                 (org-agenda-overriding-header "High-priority unfinished tasks:")))
-          (agenda ""
+      '(("D" "Today"
+         ((tags-todo "SCHEDULED=\"<today>\""
+                     ((org-agenda-overriding-header "Scheduled Today:")
+                      (org-agenda-skip-entry-if 'notodo)
+                      ))
+          (tags-todo "DEADLINE=\"<today>\""
+                     ((org-agenda-overriding-header "Due Today:")
+                      (org-agenda-todo-ignore-deadlines 'future)
+                      (org-agenda-skip-entry-if 'notodo)
+                      ))
+          (tags-todo "SCHEDULED=\"<tomorrow>\""
+                     ((org-agenda-overriding-header "Scheduled Tomorrow:")
+                      (org-agenda-skip-entry-if 'notodo)
+                      ))
+          (tags-todo "DEADLINE=\"<tomorrow>\""
+                     ((org-agenda-overriding-header "Due Tomorrow:")
+                      (org-agenda-todo-ignore-deadlines 'future)
+                      (org-agenda-skip-entry-if 'notodo)
+                      ))
+          (alltodo ""
+                   ((org-agenda-overriding-header "All Outstanding Tasks:")
+                    (org-agenda-skip-entry-if '(scheduled deadline))
+                    ))
+          ))
+        ("d" "Daily agenda and all TODOs"
+         ((agenda ""
                   ((org-agenda-ndays 1)
-                   (org-agenda-skip-function '(org-agenda-skip-entry-if 'nottodo 'any))))
+                   (org-agenda-skip-function '(or (org-agenda-skip-entry-if 'nottodo 'any)))))
           (alltodo ""
                    ((org-agenda-skip-function '(or (mcos/org-skip-if-habit)
                                                    (mcos/org-skip-if-priority ?A)
                                                    (org-agenda-skip-if nil '(scheduled deadline))))
-                    (org-agenda-overriding-header "\nALL normal priority tasks:")))
+                    (org-agenda-overriding-header "ALL normal priority tasks:")))
 
           (agenda ""
                   ((org-agenda-ndays 1)
                    (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'any))
-                   (org-agenda-overriding-header "\nReminders for today:")))
+                   (org-agenda-overriding-header "Reminders for today:")))
           (todo "DONE"
                 ((org-agenda-skip-function 'mcos/org-skip-if-not-closed-today)
-                 (org-agenda-overriding-header "\nClosed today:"))
+                 (org-agenda-overriding-header "Closed today:"))
                 )
           )
-         ((org-agenda-compact-blocks t)))
-        ("w" "Weekly agenda and all TODOs"
-         ((tags "PRIORITY=\"A\""
-                ((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
-                 (org-agenda-overriding-header "High-priority unfinished tasks:")))
-          (agenda ""
-                  ((org-agenda-span 'week)
-                   (org-agenda-start-on-weekday 0)
-                   (org-agenda-skip-function '(org-agenda-skip-entry-if 'nottodo 'any))))
-          (alltodo ""
-                   ((org-agenda-skip-function '(or (mcos/org-skip-if-habit)
-                                                   (mcos/org-skip-if-priority ?A)
-                                                   (org-agenda-skip-if nil '(scheduled deadline))))
-                    (org-agenda-overriding-header "\nALL normal priority tasks:")))
+         ))
+      )
 
-          (agenda ""
-                  ((org-agenda-span 'week)
-                   (org-agenda-start-on-weekday 0)
-                   (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'any))
-                   (org-agenda-overriding-header "\nReminders for this week:")))
-          (todo "DONE"
-                ((org-agenda-overriding-header "\nClosed this week:"))
-                )
-          )
-         ((org-agenda-compact-blocks t)))))
+;; Simply separate agenda blocks with newlines
+(setq org-agenda-block-separator "")
 
-(add-to-list 'org-agenda-custom-commands
-             `("f." "Today"
-               ((agenda ""
-                        ((org-agenda-entry-types '(:timestamp :sexp))
-                         (org-agenda-overriding-header
-                          (concat "CALENDAR Today"
-                                  (format-time-string "%a %d" (current-time))))
-                         (org-agenda-span 'day)))
-                (tags-todo "DEADLINE=\"<+0d>\""
-                           ((org-agenda-overriding-header "DUE TODAY")
-                            (org-agenda-skip-function
-                             '(org-agenda-skip-if nil '(deadline)))
-                            (org-agenda-sorting-strategy '(priority-down))))
-                (tags-todo "DEADLINE<\"<+0d>\""
-                           ((org-agenda-overriding-header "OVERDUE")
-                            (org-agenda-skip-function
-                             '(org-agenda-skip-if nil '(deadline)))
-                            (org-agenda-sorting-strategy '(priority-down))))
-                (agenda ""
-                        ((org-agenda-entry-types '(:scheduled))
-                         (org-agenda-overriding-header "SCHEDULED")
-                         (org-agenda-skip-function
-                          '(org-agenda-skip-entry-if 'todo 'done))
-                         (org-agenda-sorting-strategy
-                          '(priority-down time-down))
-                         (org-agenda-span 'day)
-                         (org-agenda-start-on-weekday nil)
-                         (org-agenda-time-grid nil)))
-                (todo "DONE"
-                      ((org-agenda-skip-function 'mcos/org-skip-if-not-closed-today)
-                       (org-agenda-overriding-header "COMPLETED TODAY"))))
-               ((org-agenda-format-date "")
-                (org-agenda-start-with-clockreport-mode nil)
-                (org-agenda-compact-blocks nil))) t)
-
-;; Set up a strike-through font for "DONE" items
+;; set up a strike-through font for "DONE" items
 (set-face-attribute 'org-agenda-done nil :strike-through t)
 
 (defadvice enable-theme (after org-strike-done activate)
@@ -1005,6 +1066,7 @@ Skips the current entry unless SUBTREE is not nil."
 
 ;; Protobuf
 (require 'protobuf-mode)
+(add-to-list 'auto-mode-alist '("\\.proto$" . protobuf-mode))
 (defconst my-protobuf-style
   '((c-basic-offset . 2)
     (indent-tabs-mode . nil)))
@@ -1015,5 +1077,117 @@ Skips the current entry unless SUBTREE is not nil."
 ;; Terraform
 (require 'terraform-mode)
 
-;; NOTE: This is so that emacs doesn't go looking for a TAGS file in the wrong place.
+;; Dockerfile
+(require 'dockerfile-mode)
+(add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode))
+(add-to-list 'auto-mode-alist '("\\.docker$" . dockerfile-mode))
+
+;; note: This is so that emacs doesn't go looking for a TAGS file in the wrong place.
 (setq tags-table-list nil)
+(put 'downcase-region 'disabled nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;
+;; Clojure and Lisps ;;
+;;;;;;;;;;;;;;;;;;;;;;;
+(require 'cider)
+
+;; REPL related stuff
+
+;; REPL history file
+(setq cider-repl-history-file "~/.emacs.d/cider-history")
+
+;; nice pretty printing
+(setq cider-repl-use-pretty-printing t)
+
+;; nicer font lock in REPL
+(setq cider-repl-use-clojure-font-lock t)
+
+;; result prefix for the REPL
+(setq cider-repl-result-prefix ";; => ")
+
+;; never ending REPL history
+(setq cider-repl-wrap-history t)
+
+;; looong history
+(setq cider-repl-history-size 3000)
+
+;; eldoc for clojure
+(add-hook 'cider-mode-hook #'eldoc-mode)
+
+
+;; error buffer not popping up
+(setq cider-show-error-buffer nil)
+
+;; company mode for completion
+(add-hook 'cider-repl-mode-hook #'company-mode)
+(add-hook 'cider-mode-hook #'company-mode)
+
+(require 'clj-refactor)
+
+(add-hook 'clojure-mode-hook
+	  (lambda ()
+	    (clj-refactor-mode 1)
+	    ;; insert keybinding setup here
+	    (cljr-add-keybindings-with-prefix "C-c RET")))
+
+(add-hook 'clojure-mode-hook #'yas-minor-mode)
+
+;; no auto sort
+(setq cljr-auto-sort-ns nil)
+
+;; do not prefer prefixes when using clean-ns
+(setq cljr-favor-prefix-notation nil)
+
+(require 'flycheck-clojure)
+
+(eval-after-load 'flycheck '(flycheck-clojure-setup))
+
+(require 'hl-sexp)
+(add-hook 'clojure-mode-hook #'hl-sexp-mode)
+(add-hook 'lisp-mode-hook #'hl-sexp-mode)
+(add-hook 'emacs-lisp-mode-hook #'hl-sexp-mode)
+
+(require 'evil-paredit)
+(add-hook 'lisp-mode-hook #'evil-paredit-mode)
+(add-hook 'emacs-lisp-mode-hook #'evil-paredit-mode)
+(add-hook 'clojure-mode-hook #'evil-paredit-mode)
+(add-hook 'cider-repl-mode-hook #'evil-paredit-mode)
+
+(add-to-list 'evil-surround-operator-alist
+             '(evil-paredit-change . change))
+(add-to-list 'evil-surround-operator-alist
+             '(evil-paredit-delete . delete))
+
+;;;;;;;;;;;;
+;; Groovy ;;
+;;;;;;;;;;;;
+
+(require 'groovy-mode)
+(add-to-list 'auto-mode-alist '("Jenkinsfile\\'" . groovy-mode))
+
+(add-hook 'groovy-mode-hook
+          (lambda ()
+            (setq indent-tabs-mode nil)
+            (setq tab-width 4)
+            (setq c-basic-offset 4)))
+
+;;;;;;;;;;;;
+;; Python ;;
+;;;;;;;;;;;;
+
+(require 'elpy)
+(elpy-enable)
+(elpy-use-ipython)
+
+;; Use jedi as backend for Elpy
+(setq elpy-rpc-backend "jedi")
+;; Set timeout for backend rpc
+(setq elpy-rpc-timeout 3)
+
+(require 'py-autopep8)
+(add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
+
+;; do not try to guess the indent offset
+;; Avoid this message: "Can’t guess python-indent-offset, using defaults: 4"
+;; http://stackoverflow.com/questions/18778894/emacs-24-3-python-cant-guess-python-indent-offset-using-defaults-4
+(setq python-indent-guess-indent-offset nil)

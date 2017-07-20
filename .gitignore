@@ -13,3 +13,8 @@ bookmarks
 recentf
 .yas-compiled-snippets.el
 gotools/
+cider-history
+.mc-lists.el
+*.data
+ede-*.el
+gh-gist-api*

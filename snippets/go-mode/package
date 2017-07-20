@@ -3,5 +3,5 @@
 # key: pack
 # contributor : @atotto
 # --
-// 
+// Package $1
 package ${1:main}
