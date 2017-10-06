@@ -18,3 +18,7 @@ cider-history
 *.data
 ede-*.el
 gh-gist-api*
+
+# Custom files
+custom/*
+org-gcal/*

@@ -78,6 +78,7 @@
                       python-mode
                       py-autopep8
                       elpy
+                      org-gcal
                       )
 
   "A list of packages that should be installed at launch")
@@ -99,10 +100,17 @@
 (setq dotfiles-dir (file-name-directory
                     (or (buffer-file-name) load-file-name)))
 
-(add-to-list 'load-path (concat dotfiles-dir "custom"))
+(defun load-directory (dir)
+      (let ((load-it (lambda (f)
+		       (load-file (concat (file-name-as-directory dir) f)))
+		     ))
+	(mapc load-it (directory-files dir nil "\\.el$"))))
+
+(setq custom-dir (expand-file-name "custom" dotfiles-dir))
+(when (file-exists-p custom-dir)
+  (load-directory custom-dir))
 
 ;; This function replaces modes in some alist with another mode
-;;
 ;; Some modes just insist on putting themselves into the
 ;; auto-mode-alist, this function helps me get rid of them
 (defun replace-auto-mode (oldmode newmode)
@@ -387,7 +395,8 @@
 (add-hook 'after-init-hook #'global-flycheck-mode)
 
 ; (setq-default flycheck-disabled-checkers '(go-build go-errcheck go-unconvert go-test json-jsonlist javascript-jshint))
-(setq-default flycheck-disabled-checkers '(json-jsonlist javascript-jshint))
+(setq-default flycheck-disabled-checkers '(json-jsonlist javascript-jshint go-megacheck))
+(setq-default flycheck-check-syntax-automatically '(save idle-change new-line))
 
 ;; Rename a file and a buffer
 (defun rename-file-and-buffer (new-name)
@@ -477,7 +486,8 @@
  '(nav-width 25)
  '(package-selected-packages
    (quote
-    (highlight-indentation anaconda-mode elpy py-autopep8 groovy-mode hl-sexp flycheck-clojure clj-refactor evil-paredit helm-cider cider dockerfile-mode gist evil-visualstar gorepl-mode php-extras ede-php-autoload deferred helm-go-package godoctor flycheck-protobuf helm-gtags ggtags php-eldoc yaml-mode xcscope ws-butler web-mode vagrant use-package terraform-mode tao-theme smartparens smart-mode-line-powerline-theme python-mode pydoc-info protobuf-mode powerline-evil plantuml-mode php-refactor-mode php-mode ox-gfm org-pandoc nav monochrome-theme minimal-theme minimal-session-saver memoize markdown-mode magit key-chord json-mode js2-refactor js-doc ipython idle-highlight-mode helm-projectile helm-open-github helm-ag gotests gotest go-projectile go-impl flycheck fill-column-indicator exec-path-from-shell evil-surround evil-leader etags-table etags-select elixir-yasnippets el-get ein dash-functional company-go coffee-mode better-defaults base16-theme alchemist airline-themes ag)))
+    (org-gcal highlight-indentation anaconda-mode elpy py-autopep8 groovy-mode hl-sexp flycheck-clojure clj-refactor evil-paredit helm-cider cider dockerfile-mode gist evil-visualstar gorepl-mode php-extras ede-php-autoload deferred helm-go-package godoctor flycheck-protobuf helm-gtags ggtags php-eldoc yaml-mode xcscope ws-butler web-mode vagrant use-package terraform-mode tao-theme smartparens smart-mode-line-powerline-theme python-mode pydoc-info protobuf-mode powerline-evil plantuml-mode php-refactor-mode php-mode ox-gfm org-pandoc nav monochrome-theme minimal-theme minimal-session-saver memoize markdown-mode magit key-chord json-mode js2-refactor js-doc ipython idle-highlight-mode helm-projectile helm-open-github helm-ag gotests gotest go-projectile go-impl flycheck fill-column-indicator exec-path-from-shell evil-surround evil-leader etags-table etags-select elixir-yasnippets el-get ein dash-functional company-go coffee-mode better-defaults base16-theme alchemist airline-themes ag)))
+ '(safe-local-variable-values nil)
  '(show-paren-mode t))
 
 ;; key bindings
@@ -820,14 +830,49 @@
 ;; force UTF-8
 (setq org-export-coding-system 'utf-8)
 
-(setq org-directory "~/Dropbox/org/")
+(setq org-directory "/Users/mark/Dropbox/org/")
 
 (setq org-default-notes-file (concat org-directory "refile.org"))
 
+;; Set up google calendar sync
+(require 'org-gcal)
+(setq org-gcal-client-id creds-gcal-client-id
+      org-gcal-client-secret creds-gcal-client-secret
+      org-gcal-file-alist `((,creds-gcal-calendar-id . ,(concat org-directory creds-gcal-org-path))))
+
+;; Split org-agenda windows in a reasonable manner
+(setq org-agenda-window-setup 'current-window)
+(setq org-agenda-files (list
+                        org-directory
+                        (concat org-directory "robin/")
+                        (concat org-directory "cal/")
+                        ))
+
+;; Patch org-capture to use vertical split window
+(defadvice org-capture (after org-capture-arrange-windows activate)
+  (org-capture-arrange-windows-horizontally))
+
+;; Capture templates for: TODO tasks, Notes, appointments, phone calls, meetings, and org-protocol
+(setq org-capture-templates
+      (quote (("t" "Todo" entry (file "")
+               "* TODO %?\nCREATED: %U\n"))))
+
+;; Other possible capture templates:
+;; ("n" "Note" entry (file (concat org-directory "refile.org"))
+;;  "* %? :NOTE:\n%U\n%a\n")
+;; ("i" "Idea" entry (file (concat org-directory "refile.org"))
+;;  "* %? :IDEA:\n%U\n%a\n")
+;; ("d" "Diary" entry (file+datetree (concat org-directory "diary.org"))
+;;  "* %?\n%U\n")
+;; ("b" "Book" entry (file (concat org-directory "books.org"))
+;;  "* TODO %\\1 - %\\2%?\n%U\n:AUTHOR: %^{AUTHOR}\n:TITLE: %^{TITLE}\n")
+;; ("m" "Meeting" entry (file (concat org-directory "refile.org"))
+;;  "* MEETING with %? :MEETING:\n%U")
+
 ;; TODO: Better display of this list
-;; Also, figure out colours for each tag
+;; '!' (for a timestamp) or '@' (for a note with timestamp)
 (setq org-todo-keywords
-      '((sequence "TODO" "IN-PROGRESS" "WAITING" "|" "DONE" "CANCELED")))
+      '((sequence "TODO(t)" "STARTED(s!)" "WAITING(w@)" "DELEGATED(l@)" "|" "DONE(d!)" "CANCELED(c@)")))
 
 (setq org-use-fast-todo-selection t)
 (setq org-treat-S-cursor-todo-selection-as-state-change nil)
@@ -835,143 +880,59 @@
 (setq org-src-fontify-natively t)
 (setq org-src-tab-acts-natively t)
 
-;; Split org-agenda windows in a reasonable manner
-(setq org-agenda-window-setup 'current-window)
-(setq org-agenda-files (list org-directory (concat org-directory "robin/")))
-
-;; Patch org-capture to use vertical split window
-(defadvice org-capture (after org-capture-arrange-windows activate)
-  (org-capture-arrange-windows-horizontally))
-
-
 (setq org-agenda-view-columns-initially nil)
-
-;; Capture templates for: TODO tasks, Notes, appointments, phone calls, meetings, and org-protocol
-(setq org-capture-templates
-      (quote (("t" "Todo" entry (file (concat org-directory "todo.org"))
-               "* TODO %?\nCREATED: %U\n")
-              ("n" "Note" entry (file (concat org-directory "refile.org"))
-               "* %? :NOTE:\n%U\n%a\n")
-              ("i" "Idea" entry (file (concat org-directory "refile.org"))
-               "* %? :IDEA:\n%U\n%a\n")
-              ("d" "Diary" entry (file+datetree (concat org-directory "diary.org"))
-               "* %?\n%U\n")
-              ("b" "Book" entry (file (concat org-directory "books.org"))
-               "* TODO %\\1 - %\\2%?\n%U\n:AUTHOR: %^{AUTHOR}\n:TITLE: %^{TITLE}\n")
-              ("m" "Meeting" entry (file (concat org-directory "refile.org"))
-               "* MEETING with %? :MEETING:\n%U"))))
-
-(setq org-agenda-skip-scheduled-if-done t)
-
-;; Custom Agenda Views
-;; (setq org-agenda-custom-commands
-;;       '(("d" "Daily agenda and all TODOs"
-;;          ((tags "PRIORITY=\"A\""
-;;                 ((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
-;;                  (org-agenda-overriding-header "High-priority unfinished tasks:")))
-;;           (agenda ""
-;;                   ((org-agenda-ndays 1)
-;;                    (org-agenda-skip-function '(org-agenda-skip-entry-if 'nottodo 'any))))
-;;           (alltodo ""
-;;                    ((org-agenda-skip-function '(or (mcos/org-skip-if-habit)
-;;                                                    (mcos/org-skip-if-priority ?A)
-;;                                                    (org-agenda-skip-if nil '(scheduled deadline))))
-;;                     (org-agenda-overriding-header "\nALL normal priority tasks:")))
-
-;;           (agenda ""
-;;                   ((org-agenda-ndays 1)
-;;                    (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'any))
-;;                    (org-agenda-overriding-header "\nReminders for today:")))
-;;           (todo "DONE"
-;;                 ((org-agenda-skip-function 'mcos/org-skip-if-not-closed-today)
-;;                  (org-agenda-overriding-header "\nClosed today:"))
-;;                 )
-;;           )
-;;          ((org-agenda-compact-blocks t)))
-;;         ("w" "Weekly agenda and all TODOs"
-;;          ((tags "PRIORITY=\"A\""
-;;                 ((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
-;;                  (org-agenda-overriding-header "High-priority unfinished tasks:")))
-;;           (agenda ""
-;;                   ((org-agenda-span 'week)
-;;                    (org-agenda-start-on-weekday 0)
-;;                    (org-agenda-skip-function '(org-agenda-skip-entry-if 'nottodo 'any))))
-;;           (alltodo ""
-;;                    ((org-agenda-skip-function '(or (mcos/org-skip-if-habit)
-;;                                                    (mcos/org-skip-if-priority ?A)
-;;                                                    (org-agenda-skip-if nil '(scheduled deadline))))
-;;                     (org-agenda-overriding-header "\nALL normal priority tasks:")))
-
-;;           (agenda ""
-;;                   ((org-agenda-span 'week)
-;;                    (org-agenda-start-on-weekday 0)
-;;                    (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'any))
-;;                    (org-agenda-overriding-header "\nReminders for this week:")))
-;;           (todo "DONE"
-;;                 ((org-agenda-overriding-header "\nClosed this week:"))
-;;                 )
-;;           )
-;;          ((org-agenda-compact-blocks t)))))
-
-(setq org-agenda-skip-scheduled-if-deadline-is-shown t)
-
-(setq org-agenda-custom-commands
-      '(("D" "Today"
-         ((tags-todo "SCHEDULED=\"<today>\""
-                     ((org-agenda-overriding-header "Scheduled Today:")
-                      (org-agenda-skip-entry-if 'notodo)
-                      ))
-          (tags-todo "DEADLINE=\"<today>\""
-                     ((org-agenda-overriding-header "Due Today:")
-                      (org-agenda-todo-ignore-deadlines 'future)
-                      (org-agenda-skip-entry-if 'notodo)
-                      ))
-          (tags-todo "SCHEDULED=\"<tomorrow>\""
-                     ((org-agenda-overriding-header "Scheduled Tomorrow:")
-                      (org-agenda-skip-entry-if 'notodo)
-                      ))
-          (tags-todo "DEADLINE=\"<tomorrow>\""
-                     ((org-agenda-overriding-header "Due Tomorrow:")
-                      (org-agenda-todo-ignore-deadlines 'future)
-                      (org-agenda-skip-entry-if 'notodo)
-                      ))
-          (alltodo ""
-                   ((org-agenda-overriding-header "All Outstanding Tasks:")
-                    (org-agenda-skip-entry-if '(scheduled deadline))
-                    ))
-          ))
-        ("d" "Daily agenda and all TODOs"
-         ((agenda ""
-                  ((org-agenda-ndays 1)
-                   (org-agenda-skip-function '(or (org-agenda-skip-entry-if 'nottodo 'any)))))
-          (alltodo ""
-                   ((org-agenda-skip-function '(or (mcos/org-skip-if-habit)
-                                                   (mcos/org-skip-if-priority ?A)
-                                                   (org-agenda-skip-if nil '(scheduled deadline))))
-                    (org-agenda-overriding-header "ALL normal priority tasks:")))
-
-          (agenda ""
-                  ((org-agenda-ndays 1)
-                   (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'any))
-                   (org-agenda-overriding-header "Reminders for today:")))
-          (todo "DONE"
-                ((org-agenda-skip-function 'mcos/org-skip-if-not-closed-today)
-                 (org-agenda-overriding-header "Closed today:"))
-                )
-          )
-         ))
-      )
+(setq org-agenda-span 7)
+(setq org-agenda-start-on-weekday nil)
+(setq org-agenda-show-all-dates t)
+(setq org-reverse-note-order t)
+(setq org-fast-tag-selection-single-key (quote expert))
+(setq org-fontify-done-headline t)
+(setq org-agenda-skip-scheduled-if-deadline-is-shown 'not-today)
 
 ;; Simply separate agenda blocks with newlines
 (setq org-agenda-block-separator "")
-
 ;; set up a strike-through font for "DONE" items
 (set-face-attribute 'org-agenda-done nil :strike-through t)
+(set-face-attribute 'org-headline-done nil :strike-through t)
+(set-face-attribute 'org-done nil :strike-through t)
 
 (defadvice enable-theme (after org-strike-done activate)
   "Setup org-agenda-done faces to have strike-through on"
   (and (message "Running advice")
-       (set-face-attribute 'org-agenda-done nil :strike-through t)))
+       (set-face-attribute 'org-agenda-done nil :strike-through t)
+       (set-face-attribute 'org-headline-done nil :strike-through t)
+       (set-face-attribute 'org-done nil :strike-through t)))
+
+(setq org-agenda-custom-commands
+      '(("d" todo "DELEGATED" nil)
+       ("c" todo "DONE|DEFERRED|CANCELLED" nil)
+       ("w" todo "WAITING" nil)
+       ("F" "Four Week Agenda" agenda ""
+        ((org-agenda-span 28)
+         (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "CANCELED"))))
+        (org-agenda-overriding-header "Four Week Task List"))
+       ("k" "Standup (Kanban)" agenda ""
+        ((org-agenda-start-day "-1d")
+         (org-agenda-span 3) ;; yesterday, today, tomorrow.
+         (org-agenda-start-on-weekday nil))
+        (org-agenda-overriding-header "Standup Report"))
+       ("W" "Week Agenda" agenda ""
+        ((org-agenda-span 7)
+         (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "CANCELED"))))
+        (org-agenda-overriding-header "Weekly Task List"))
+       ("A" "Today's Priority #A Tasks" agenda ""
+        ((org-agenda-skip-function
+          (lambda nil
+            (org-agenda-skip-entry-if (quote notregexp) "\\=.*\\[#A\\]")))
+         (org-agenda-span 1)
+         (org-agenda-overriding-header "Today's Priority #A tasks: ")))
+       ("u" "Unscheduled TODO entries" alltodo ""
+        ((org-agenda-skip-function
+          (lambda nil
+            (org-agenda-skip-entry-if (quote scheduled) (quote deadline)
+                                      (quote regexp) "\n]+>")))
+         (org-agenda-overriding-header "Unscheduled TODO entries: ")))
+       ))
 
 ;; Optimize indentation for outline-style documents
 (setq org-startup-indented t)
@@ -1001,10 +962,10 @@
 (setq org-enforce-todo-dependencies t)
 
 ;; Logging state changes
-(setq org-log-done t)
+(setq org-log-done 'time)
 (setq org-log-reschedule (quote time))
 (setq org-log-redeadline (quote time))
-(setq org-log-into-drawer t)
+(setq org-log-into-drawer nil)
 
 (defun mcos/org-skip-if-not-closed-today (&optional subtree)
   "Skip entries that were not closed today.
@@ -1123,6 +1084,7 @@ Skips the current entry unless SUBTREE is not nil."
 (add-hook 'cider-mode-hook #'company-mode)
 
 (require 'clj-refactor)
+(require 'seq-25) ;; temporary workaround for clj-refactor, see https://github.com/clojure-emacs/clj-refactor.el/issues/365
 
 (add-hook 'clojure-mode-hook
 	  (lambda ()
