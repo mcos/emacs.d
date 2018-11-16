@@ -51,7 +51,6 @@
                       key-chord
                       ag
                       rich-minority
-                      minimal-theme
                       elixir-mode
                       elixir-yasnippets
                       alchemist
@@ -75,9 +74,15 @@
                       flycheck-clojure
                       hl-sexp
                       groovy-mode
-                      python-mode
                       py-autopep8
                       elpy
+                      org-gcal
+                      planet-theme
+                      jinja2-mode
+                      rainbow-delimiters
+                      pretty-mode
+                      thrift
+                      graphql-mode
                       )
 
   "A list of packages that should be installed at launch")
@@ -99,10 +104,17 @@
 (setq dotfiles-dir (file-name-directory
                     (or (buffer-file-name) load-file-name)))
 
-(add-to-list 'load-path (concat dotfiles-dir "custom"))
+(defun load-directory (dir)
+      (let ((load-it (lambda (f)
+		       (load-file (concat (file-name-as-directory dir) f)))
+		     ))
+	(mapc load-it (directory-files dir nil "\\.el$"))))
+
+(setq custom-dir (expand-file-name "custom" dotfiles-dir))
+(when (file-exists-p custom-dir)
+  (load-directory custom-dir))
 
 ;; This function replaces modes in some alist with another mode
-;;
 ;; Some modes just insist on putting themselves into the
 ;; auto-mode-alist, this function helps me get rid of them
 (defun replace-auto-mode (oldmode newmode)
@@ -122,41 +134,154 @@
 ;; Turn off bells
 (setq ring-bell-function 'ignore)
 
-;; Color Theme
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "#2b2b2b" :foreground "#a9b7c6" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 130 :width normal :foundry "nil" :family "Menlo"))))
- '(company-preview ((t (:foreground "darkgray" :underline t))))
- '(company-preview-common ((t (:inherit company-preview))))
- '(company-tooltip ((t (:background "lightgray" :foreground "black"))))
- '(company-tooltip-annotation ((((type x)) (:inherit company-tooltip-annotation :foreground "black")) (t (:inherit company-tooltip-annotation))))
- '(company-tooltip-common ((((type x)) (:inherit company-tooltip :weight bold)) (t (:inherit company-tooltip))))
- '(company-tooltip-common-selection ((((type x)) (:inherit company-tooltip-selection :weight bold)) (t (:inherit company-tooltip-selection))))
- '(company-tooltip-selection ((t (:background "steelblue" :foreground "white"))))
- '(font-lock-builtin-face ((t (:foreground "#a9b7c6" :weight bold))))
- '(font-lock-comment-delimiter-face ((t (:foreground "gray50" :slant italic))))
- '(font-lock-comment-face ((t (:foreground "gray60" :slant italic))))
- '(font-lock-constant-face ((t (:foreground "#a9b7c6" :weight bold))))
- '(font-lock-function-name-face ((t (:foreground "#a9b7c6" :weight bold))))
- '(font-lock-keyword-face ((t (:foreground "#a9b7c6" :weight bold))))
- '(font-lock-type-face ((t (:foreground "#a9b7c6" :slant italic))))
- '(font-lock-variable-name-face ((t (:foreground "#a9b7c6"))))
- '(org-level-1 ((t (:foreground "#a9b7c6" :inherit outline-1 :height 1.3))))
- '(org-level-2 ((t (:foreground "#a9b7c6" :inherit outline-2 :height 1.2))))
- '(org-level-3 ((t (:foreground "#a9b7c6" :inherit outline-3 :height 1.15))))
- '(org-level-4 ((t (:foreground "#a9b7c6" :inherit outline-4 :height 1.1))))
- '(org-level-5 ((t (:foreground "#a9b7c6" :inherit outline-4 :height 1.0))))
- '(org-level-6 ((t (:foreground "#a9b7c6" :inherit outline-4 :height 1.0))))
- '(org-level-7 ((t (:foreground "#a9b7c6" :inherit outline-4 :height 1.0))))
- '(org-level-8 ((t (:foreground "#a9b7c6" :inherit outline-4 :height 1.0)))))
-
-(load-theme 'minimal t)
+;; Theme - planet theme (added 2017-12-29)
+(require 'planet-theme)
+(load-theme 'planet t)
 
 ;; Turn off the silly startup message
 (setq inhibit-startup-message t)
+
+;; Pretty font ligatures and stuff
+(require 'pretty-mode)
+(global-pretty-mode t)
+(global-prettify-symbols-mode 1)
+
+(set-language-environment "UTF-8")
+(set-default-coding-systems 'utf-8)
+
+;;; Fira code
+;; This works when using emacs --daemon + emacsclient
+(add-hook 'after-make-frame-functions (lambda (frame) (set-fontset-font t '(#Xe100 . #Xe16f) "Fira Code Symbol")))
+;; This works when using emacs without server/client
+(set-fontset-font t '(#Xe100 . #Xe16f) "Fira Code Symbol")
+;; I haven't found one statement that makes both of the above situations work, so I use both for now
+(defconst fira-code-font-lock-keywords-alist
+  (mapcar (lambda (regex-char-pair)
+            `(,(car regex-char-pair)
+              (0 (prog1 ()
+                   (compose-region (match-beginning 1)
+                                   (match-end 1)
+                                   ;; The first argument to concat is a string containing a literal tab
+                                   ,(concat "	" (list (decode-char 'ucs (cadr regex-char-pair)))))))))
+          '(("\\(www\\)"                   #Xe100)
+            ("[^/]\\(\\*\\*\\)[^/]"        #Xe101)
+            ("\\(\\*\\*\\*\\)"             #Xe102)
+            ("\\(\\*\\*/\\)"               #Xe103)
+            ("\\(\\*>\\)"                  #Xe104)
+            ("[^*]\\(\\*/\\)"              #Xe105)
+            ("\\(\\\\\\\\\\)"              #Xe106)
+            ("\\(\\\\\\\\\\\\\\)"          #Xe107)
+            ("\\({-\\)"                    #Xe108)
+            ("\\(\\[\\]\\)"                #Xe109)
+            ("\\(::\\)"                    #Xe10a)
+            ("\\(:::\\)"                   #Xe10b)
+            ("[^=]\\(:=\\)"                #Xe10c)
+            ("\\(!!\\)"                    #Xe10d)
+            ("\\(!=\\)"                    #Xe10e)
+            ("\\(!==\\)"                   #Xe10f)
+            ("\\(-}\\)"                    #Xe110)
+            ("\\(--\\)"                    #Xe111)
+            ("\\(---\\)"                   #Xe112)
+            ("\\(-->\\)"                   #Xe113)
+            ("[^-]\\(->\\)"                #Xe114)
+            ("\\(->>\\)"                   #Xe115)
+            ("\\(-<\\)"                    #Xe116)
+            ("\\(-<<\\)"                   #Xe117)
+            ("\\(-~\\)"                    #Xe118)
+            ("\\(#{\\)"                    #Xe119)
+            ("\\(#\\[\\)"                  #Xe11a)
+            ("\\(##\\)"                    #Xe11b)
+            ("\\(###\\)"                   #Xe11c)
+            ("\\(####\\)"                  #Xe11d)
+            ("\\(#(\\)"                    #Xe11e)
+            ("\\(#\\?\\)"                  #Xe11f)
+            ("\\(#_\\)"                    #Xe120)
+            ("\\(#_(\\)"                   #Xe121)
+            ("\\(\\.-\\)"                  #Xe122)
+            ("\\(\\.=\\)"                  #Xe123)
+            ("\\(\\.\\.\\)"                #Xe124)
+            ("\\(\\.\\.<\\)"               #Xe125)
+            ("\\(\\.\\.\\.\\)"             #Xe126)
+            ("\\(\\?=\\)"                  #Xe127)
+            ("\\(\\?\\?\\)"                #Xe128)
+            ("\\(;;\\)"                    #Xe129)
+            ("\\(/\\*\\)"                  #Xe12a)
+            ("\\(/\\*\\*\\)"               #Xe12b)
+            ("\\(/=\\)"                    #Xe12c)
+            ("\\(/==\\)"                   #Xe12d)
+            ("\\(/>\\)"                    #Xe12e)
+            ("\\(//\\)"                    #Xe12f)
+            ("\\(///\\)"                   #Xe130)
+            ("\\(&&\\)"                    #Xe131)
+            ("\\(||\\)"                    #Xe132)
+            ("\\(||=\\)"                   #Xe133)
+            ("[^|]\\(|=\\)"                #Xe134)
+            ("\\(|>\\)"                    #Xe135)
+            ("\\(\\^=\\)"                  #Xe136)
+            ("\\(\\$>\\)"                  #Xe137)
+            ("\\(\\+\\+\\)"                #Xe138)
+            ("\\(\\+\\+\\+\\)"             #Xe139)
+            ("\\(\\+>\\)"                  #Xe13a)
+            ("\\(=:=\\)"                   #Xe13b)
+            ("[^!/]\\(==\\)[^>]"           #Xe13c)
+            ("\\(===\\)"                   #Xe13d)
+            ("\\(==>\\)"                   #Xe13e)
+            ("[^=]\\(=>\\)"                #Xe13f)
+            ("\\(=>>\\)"                   #Xe140)
+            ("\\(<=\\)"                    #Xe141)
+            ("\\(=<<\\)"                   #Xe142)
+            ("\\(=/=\\)"                   #Xe143)
+            ("\\(>-\\)"                    #Xe144)
+            ("\\(>=\\)"                    #Xe145)
+            ("\\(>=>\\)"                   #Xe146)
+            ("[^-=]\\(>>\\)"               #Xe147)
+            ("\\(>>-\\)"                   #Xe148)
+            ("\\(>>=\\)"                   #Xe149)
+            ("\\(>>>\\)"                   #Xe14a)
+            ("\\(<\\*\\)"                  #Xe14b)
+            ("\\(<\\*>\\)"                 #Xe14c)
+            ("\\(<|\\)"                    #Xe14d)
+            ("\\(<|>\\)"                   #Xe14e)
+            ("\\(<\\$\\)"                  #Xe14f)
+            ("\\(<\\$>\\)"                 #Xe150)
+            ("\\(<!--\\)"                  #Xe151)
+            ("\\(<-\\)"                    #Xe152)
+            ("\\(<--\\)"                   #Xe153)
+            ("\\(<->\\)"                   #Xe154)
+            ("\\(<\\+\\)"                  #Xe155)
+            ("\\(<\\+>\\)"                 #Xe156)
+            ("\\(<=\\)"                    #Xe157)
+            ("\\(<==\\)"                   #Xe158)
+            ("\\(<=>\\)"                   #Xe159)
+            ("\\(<=<\\)"                   #Xe15a)
+            ("\\(<>\\)"                    #Xe15b)
+            ("[^-=]\\(<<\\)"               #Xe15c)
+            ("\\(<<-\\)"                   #Xe15d)
+            ("\\(<<=\\)"                   #Xe15e)
+            ("\\(<<<\\)"                   #Xe15f)
+            ("\\(<~\\)"                    #Xe160)
+            ("\\(<~~\\)"                   #Xe161)
+            ("\\(</\\)"                    #Xe162)
+            ("\\(</>\\)"                   #Xe163)
+            ("\\(~@\\)"                    #Xe164)
+            ("\\(~-\\)"                    #Xe165)
+            ("\\(~=\\)"                    #Xe166)
+            ("\\(~>\\)"                    #Xe167)
+            ("[^<]\\(~~\\)"                #Xe168)
+            ("\\(~~>\\)"                   #Xe169)
+            ("\\(%%\\)"                    #Xe16a)
+           ;; ("\\(x\\)"                   #Xe16b) This ended up being hard to do properly so i'm leaving it out.
+            ("[^:=]\\(:\\)[^:=]"           #Xe16c)
+            ("[^\\+<>]\\(\\+\\)[^\\+<>]"   #Xe16d)
+            ("[^\\*/<>]\\(\\*\\)[^\\*/<>]" #Xe16f))))
+(defun add-fira-code-symbol-keywords ()
+  (font-lock-add-keywords nil fira-code-font-lock-keywords-alist))
+(add-hook 'prog-mode-hook
+          #'add-fira-code-symbol-keywords)
+
+(add-hook 'helm-major-mode-hook
+          (lambda ()
+            (setq auto-composition-mode nil)))
 
 ;;;;;;;;;;;;;;;
 ;; Key Chord ;;
@@ -198,6 +323,48 @@
 ;; Evil visual star mode
 (require 'evil-visualstar)
 (global-evil-visualstar-mode)
+
+;; Rainbow Delimiters when in prog mode
+(require 'rainbow-delimiters)
+(add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
+
+;;;;;;;;;;;;;
+;; Backups ;;
+;;;;;;;;;;;;;
+
+(setq version-control t     ;; Use version numbers for backups.
+      kept-new-versions 9  ;; Number of newest versions to keep.
+      kept-old-versions 6   ;; Number of oldest versions to keep.
+      auto-save-default t               ; auto-save every buffer that visits a file
+      auto-save-timeout 20              ; number of seconds idle time before auto-save (default: 30)
+      auto-save-interval 200            ; number of keystrokes between auto-saves (default: 300)
+      delete-old-versions t ;; Don't ask to delete excess backup versions.
+      backup-by-copying t)  ;; Copy all files, don't rename them.
+
+(setq vc-make-backup-files t)
+
+;; Default and per-save backups go here:
+;; (setq backup-directory-alist '(("." . ,(concat user-emacs-directory "backups/per-save"))))
+
+(setq backup-directory-alist
+          `(("." . ,(concat user-emacs-directory "backups/per-save"))))
+
+
+(defun force-backup-of-buffer ()
+  ;; Make a special "per session" backup at the first save of each
+  ;; emacs session.
+  (when (not buffer-backed-up)
+    ;; Override the default parameters for per-session backups.
+    (let ((backup-directory-alist '(("" . "~/.emacs.d/backup/per-session")))
+          (kept-new-versions 3))
+      (backup-buffer)))
+  ;; Make a "per save" backup on each save.  The first save results in
+  ;; both a per-session and a per-save backup, to keep the numbering
+  ;; of per-save backups consistent.
+  (let ((buffer-backed-up nil))
+    (backup-buffer)))
+
+(add-hook 'before-save-hook  'force-backup-of-buffer)
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; Multiple Cursors ;;
@@ -387,7 +554,8 @@
 (add-hook 'after-init-hook #'global-flycheck-mode)
 
 ; (setq-default flycheck-disabled-checkers '(go-build go-errcheck go-unconvert go-test json-jsonlist javascript-jshint))
-(setq-default flycheck-disabled-checkers '(json-jsonlist javascript-jshint))
+(setq-default flycheck-disabled-checkers '(json-jsonlist javascript-jshint go-megacheck))
+(setq-default flycheck-check-syntax-automatically '(save idle-change new-line))
 
 ;; Rename a file and a buffer
 (defun rename-file-and-buffer (new-name)
@@ -470,14 +638,27 @@
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
    (quote
-    ("7838757247452123ec287fd978797f63294f6d8b26b300bb883131f5b6face54" "b749694d80fcaa9bd917c83a8f83729cdd2a79d2e60d384459eeca17b56b7bb6" "cc0dbb53a10215b696d391a90de635ba1699072745bf653b53774706999208e3" default)))
+    ("a56a6bf2ecb2ce4fa79ba636d0a5cf81ad9320a988ec4e55441a16d66b0c10e0" "115d42fa02a5ce6a759e38b27304e833d57a48422c2408d5455f14450eb96554" "43c1a8090ed19ab3c0b1490ce412f78f157d69a29828aa977dae941b994b4147" "71b9b4c5d2a5126586d204e20c3fb4797f70d3d057a0c8b03bac2c51893007a2" "c4bd8fa17f1f1fc088a1153ca676b1e6abc55005e72809ad3aeffb74bd121d23" "2bdd513c17d3e7768bbc86adebfe9419169e92f1bf17bfc6c8f15a10c82c4a4d" "7838757247452123ec287fd978797f63294f6d8b26b300bb883131f5b6face54" "b749694d80fcaa9bd917c83a8f83729cdd2a79d2e60d384459eeca17b56b7bb6" "cc0dbb53a10215b696d391a90de635ba1699072745bf653b53774706999208e3" default)))
  '(helm-gtags-auto-update t)
  '(helm-gtags-ignore-case t)
  '(helm-gtags-path-style (quote relative))
  '(nav-width 25)
  '(package-selected-packages
    (quote
-    (highlight-indentation anaconda-mode elpy py-autopep8 groovy-mode hl-sexp flycheck-clojure clj-refactor evil-paredit helm-cider cider dockerfile-mode gist evil-visualstar gorepl-mode php-extras ede-php-autoload deferred helm-go-package godoctor flycheck-protobuf helm-gtags ggtags php-eldoc yaml-mode xcscope ws-butler web-mode vagrant use-package terraform-mode tao-theme smartparens smart-mode-line-powerline-theme python-mode pydoc-info protobuf-mode powerline-evil plantuml-mode php-refactor-mode php-mode ox-gfm org-pandoc nav monochrome-theme minimal-theme minimal-session-saver memoize markdown-mode magit key-chord json-mode js2-refactor js-doc ipython idle-highlight-mode helm-projectile helm-open-github helm-ag gotests gotest go-projectile go-impl flycheck fill-column-indicator exec-path-from-shell evil-surround evil-leader etags-table etags-select elixir-yasnippets el-get ein dash-functional company-go coffee-mode better-defaults base16-theme alchemist airline-themes ag)))
+    (graphql-mode thrift pretty-mode rainbow-delimiters jinja2-mode planet-theme org-gcal highlight-indentation anaconda-mode elpy py-autopep8 groovy-mode hl-sexp flycheck-clojure clj-refactor evil-paredit helm-cider cider dockerfile-mode gist evil-visualstar gorepl-mode php-extras ede-php-autoload deferred helm-go-package godoctor flycheck-protobuf helm-gtags ggtags php-eldoc yaml-mode xcscope ws-butler web-mode vagrant use-package terraform-mode smartparens smart-mode-line-powerline-theme pydoc-info protobuf-mode powerline-evil plantuml-mode php-refactor-mode php-mode ox-gfm org-pandoc nav minimal-session-saver memoize markdown-mode magit key-chord json-mode js2-refactor js-doc ipython idle-highlight-mode helm-projectile helm-open-github helm-ag gotests gotest go-projectile go-impl flycheck fill-column-indicator exec-path-from-shell evil-surround evil-leader etags-table etags-select elixir-yasnippets el-get ein dash-functional company-go coffee-mode better-defaults base16-theme alchemist airline-themes ag)))
+ '(safe-local-variable-values
+   (quote
+    ((dockerfile-image-name . "entities/protoc-go")
+     (dockerfile-image-name . "entities/protoc-python")
+     (dockerfile-image-name . "robin/robin-email-service")
+     (dockerfile-image-name . "recurrence_expander")
+     (dockerfile-image-name . "entities/protoc")
+     (dockerfile-image-name . "entities/protoc-php")
+     (docker-image-name . "recurrence_expander")
+     (docker-image-name . "entities/protoc")
+     (docker-image-name . "entities/protoc-go")
+     (docker-image-name . "entities/protoc-python")
+     (docker-image-name . "entities/protoc-php"))))
  '(show-paren-mode t))
 
 ;; key bindings
@@ -619,13 +800,13 @@
 (require 'company-go)
 (require 'gorepl-mode)
 
-;; Load in GOPATH from the environment
-(when (memq window-system '(mac ns))
-  (exec-path-from-shell-initialize))
 (exec-path-from-shell-copy-env "GOPATH")
 (exec-path-from-shell-copy-env "GOROOT")
 
 (setq company-go-show-annotation t)
+
+;; prevent go-projectile from screwing up GOPATH
+(setq go-projectile-switch-gopath 'never)
 
 ;; Custom go-mode hook
 (add-hook 'go-mode-hook (lambda ()
@@ -820,14 +1001,49 @@
 ;; force UTF-8
 (setq org-export-coding-system 'utf-8)
 
-(setq org-directory "~/Dropbox/org/")
+(setq org-directory "/Users/mark/Dropbox/org/")
 
 (setq org-default-notes-file (concat org-directory "refile.org"))
 
+;; Set up google calendar sync
+(require 'org-gcal)
+(setq org-gcal-client-id creds-gcal-client-id
+      org-gcal-client-secret creds-gcal-client-secret
+      org-gcal-file-alist `((,creds-gcal-calendar-id . ,(concat org-directory creds-gcal-org-path))))
+
+;; Split org-agenda windows in a reasonable manner
+(setq org-agenda-window-setup 'current-window)
+(setq org-agenda-files (list
+                        org-directory
+                        (concat org-directory "robin/")
+                        (concat org-directory "cal/")
+                        ))
+
+;; Patch org-capture to use vertical split window
+(defadvice org-capture (after org-capture-arrange-windows activate)
+  (org-capture-arrange-windows-horizontally))
+
+;; Capture templates for: TODO tasks, Notes, appointments, phone calls, meetings, and org-protocol
+(setq org-capture-templates
+      (quote (("t" "Todo" entry (file "")
+               "* TODO %?\nCREATED: %U\n"))))
+
+;; Other possible capture templates:
+;; ("n" "Note" entry (file (concat org-directory "refile.org"))
+;;  "* %? :NOTE:\n%U\n%a\n")
+;; ("i" "Idea" entry (file (concat org-directory "refile.org"))
+;;  "* %? :IDEA:\n%U\n%a\n")
+;; ("d" "Diary" entry (file+datetree (concat org-directory "diary.org"))
+;;  "* %?\n%U\n")
+;; ("b" "Book" entry (file (concat org-directory "books.org"))
+;;  "* TODO %\\1 - %\\2%?\n%U\n:AUTHOR: %^{AUTHOR}\n:TITLE: %^{TITLE}\n")
+;; ("m" "Meeting" entry (file (concat org-directory "refile.org"))
+;;  "* MEETING with %? :MEETING:\n%U")
+
 ;; TODO: Better display of this list
-;; Also, figure out colours for each tag
+;; '!' (for a timestamp) or '@' (for a note with timestamp)
 (setq org-todo-keywords
-      '((sequence "TODO" "IN-PROGRESS" "WAITING" "|" "DONE" "CANCELED")))
+      '((sequence "TODO(t)" "STARTED(s!)" "WAITING(w@)" "DELEGATED(l@)" "|" "DONE(d!)" "CANCELED(c@)")))
 
 (setq org-use-fast-todo-selection t)
 (setq org-treat-S-cursor-todo-selection-as-state-change nil)
@@ -835,143 +1051,59 @@
 (setq org-src-fontify-natively t)
 (setq org-src-tab-acts-natively t)
 
-;; Split org-agenda windows in a reasonable manner
-(setq org-agenda-window-setup 'current-window)
-(setq org-agenda-files (list org-directory (concat org-directory "robin/")))
-
-;; Patch org-capture to use vertical split window
-(defadvice org-capture (after org-capture-arrange-windows activate)
-  (org-capture-arrange-windows-horizontally))
-
-
 (setq org-agenda-view-columns-initially nil)
-
-;; Capture templates for: TODO tasks, Notes, appointments, phone calls, meetings, and org-protocol
-(setq org-capture-templates
-      (quote (("t" "Todo" entry (file (concat org-directory "todo.org"))
-               "* TODO %?\nCREATED: %U\n")
-              ("n" "Note" entry (file (concat org-directory "refile.org"))
-               "* %? :NOTE:\n%U\n%a\n")
-              ("i" "Idea" entry (file (concat org-directory "refile.org"))
-               "* %? :IDEA:\n%U\n%a\n")
-              ("d" "Diary" entry (file+datetree (concat org-directory "diary.org"))
-               "* %?\n%U\n")
-              ("b" "Book" entry (file (concat org-directory "books.org"))
-               "* TODO %\\1 - %\\2%?\n%U\n:AUTHOR: %^{AUTHOR}\n:TITLE: %^{TITLE}\n")
-              ("m" "Meeting" entry (file (concat org-directory "refile.org"))
-               "* MEETING with %? :MEETING:\n%U"))))
-
-(setq org-agenda-skip-scheduled-if-done t)
-
-;; Custom Agenda Views
-;; (setq org-agenda-custom-commands
-;;       '(("d" "Daily agenda and all TODOs"
-;;          ((tags "PRIORITY=\"A\""
-;;                 ((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
-;;                  (org-agenda-overriding-header "High-priority unfinished tasks:")))
-;;           (agenda ""
-;;                   ((org-agenda-ndays 1)
-;;                    (org-agenda-skip-function '(org-agenda-skip-entry-if 'nottodo 'any))))
-;;           (alltodo ""
-;;                    ((org-agenda-skip-function '(or (mcos/org-skip-if-habit)
-;;                                                    (mcos/org-skip-if-priority ?A)
-;;                                                    (org-agenda-skip-if nil '(scheduled deadline))))
-;;                     (org-agenda-overriding-header "\nALL normal priority tasks:")))
-
-;;           (agenda ""
-;;                   ((org-agenda-ndays 1)
-;;                    (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'any))
-;;                    (org-agenda-overriding-header "\nReminders for today:")))
-;;           (todo "DONE"
-;;                 ((org-agenda-skip-function 'mcos/org-skip-if-not-closed-today)
-;;                  (org-agenda-overriding-header "\nClosed today:"))
-;;                 )
-;;           )
-;;          ((org-agenda-compact-blocks t)))
-;;         ("w" "Weekly agenda and all TODOs"
-;;          ((tags "PRIORITY=\"A\""
-;;                 ((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
-;;                  (org-agenda-overriding-header "High-priority unfinished tasks:")))
-;;           (agenda ""
-;;                   ((org-agenda-span 'week)
-;;                    (org-agenda-start-on-weekday 0)
-;;                    (org-agenda-skip-function '(org-agenda-skip-entry-if 'nottodo 'any))))
-;;           (alltodo ""
-;;                    ((org-agenda-skip-function '(or (mcos/org-skip-if-habit)
-;;                                                    (mcos/org-skip-if-priority ?A)
-;;                                                    (org-agenda-skip-if nil '(scheduled deadline))))
-;;                     (org-agenda-overriding-header "\nALL normal priority tasks:")))
-
-;;           (agenda ""
-;;                   ((org-agenda-span 'week)
-;;                    (org-agenda-start-on-weekday 0)
-;;                    (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'any))
-;;                    (org-agenda-overriding-header "\nReminders for this week:")))
-;;           (todo "DONE"
-;;                 ((org-agenda-overriding-header "\nClosed this week:"))
-;;                 )
-;;           )
-;;          ((org-agenda-compact-blocks t)))))
-
-(setq org-agenda-skip-scheduled-if-deadline-is-shown t)
-
-(setq org-agenda-custom-commands
-      '(("D" "Today"
-         ((tags-todo "SCHEDULED=\"<today>\""
-                     ((org-agenda-overriding-header "Scheduled Today:")
-                      (org-agenda-skip-entry-if 'notodo)
-                      ))
-          (tags-todo "DEADLINE=\"<today>\""
-                     ((org-agenda-overriding-header "Due Today:")
-                      (org-agenda-todo-ignore-deadlines 'future)
-                      (org-agenda-skip-entry-if 'notodo)
-                      ))
-          (tags-todo "SCHEDULED=\"<tomorrow>\""
-                     ((org-agenda-overriding-header "Scheduled Tomorrow:")
-                      (org-agenda-skip-entry-if 'notodo)
-                      ))
-          (tags-todo "DEADLINE=\"<tomorrow>\""
-                     ((org-agenda-overriding-header "Due Tomorrow:")
-                      (org-agenda-todo-ignore-deadlines 'future)
-                      (org-agenda-skip-entry-if 'notodo)
-                      ))
-          (alltodo ""
-                   ((org-agenda-overriding-header "All Outstanding Tasks:")
-                    (org-agenda-skip-entry-if '(scheduled deadline))
-                    ))
-          ))
-        ("d" "Daily agenda and all TODOs"
-         ((agenda ""
-                  ((org-agenda-ndays 1)
-                   (org-agenda-skip-function '(or (org-agenda-skip-entry-if 'nottodo 'any)))))
-          (alltodo ""
-                   ((org-agenda-skip-function '(or (mcos/org-skip-if-habit)
-                                                   (mcos/org-skip-if-priority ?A)
-                                                   (org-agenda-skip-if nil '(scheduled deadline))))
-                    (org-agenda-overriding-header "ALL normal priority tasks:")))
-
-          (agenda ""
-                  ((org-agenda-ndays 1)
-                   (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'any))
-                   (org-agenda-overriding-header "Reminders for today:")))
-          (todo "DONE"
-                ((org-agenda-skip-function 'mcos/org-skip-if-not-closed-today)
-                 (org-agenda-overriding-header "Closed today:"))
-                )
-          )
-         ))
-      )
+(setq org-agenda-span 7)
+(setq org-agenda-start-on-weekday nil)
+(setq org-agenda-show-all-dates t)
+(setq org-reverse-note-order t)
+(setq org-fast-tag-selection-single-key (quote expert))
+(setq org-fontify-done-headline t)
+(setq org-agenda-skip-scheduled-if-deadline-is-shown 'not-today)
 
 ;; Simply separate agenda blocks with newlines
 (setq org-agenda-block-separator "")
-
 ;; set up a strike-through font for "DONE" items
 (set-face-attribute 'org-agenda-done nil :strike-through t)
+(set-face-attribute 'org-headline-done nil :strike-through t)
+(set-face-attribute 'org-done nil :strike-through t)
 
 (defadvice enable-theme (after org-strike-done activate)
   "Setup org-agenda-done faces to have strike-through on"
   (and (message "Running advice")
-       (set-face-attribute 'org-agenda-done nil :strike-through t)))
+       (set-face-attribute 'org-agenda-done nil :strike-through t)
+       (set-face-attribute 'org-headline-done nil :strike-through t)
+       (set-face-attribute 'org-done nil :strike-through t)))
+
+(setq org-agenda-custom-commands
+      '(("d" todo "DELEGATED" nil)
+       ("c" todo "DONE|DEFERRED|CANCELLED" nil)
+       ("w" todo "WAITING" nil)
+       ("F" "Four Week Agenda" agenda ""
+        ((org-agenda-span 28)
+         (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "CANCELED"))))
+        (org-agenda-overriding-header "Four Week Task List"))
+       ("k" "Standup (Kanban)" agenda ""
+        ((org-agenda-start-day "-1d")
+         (org-agenda-span 3) ;; yesterday, today, tomorrow.
+         (org-agenda-start-on-weekday nil))
+        (org-agenda-overriding-header "Standup Report"))
+       ("W" "Week Agenda" agenda ""
+        ((org-agenda-span 7)
+         (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "CANCELED"))))
+        (org-agenda-overriding-header "Weekly Task List"))
+       ("A" "Today's Priority #A Tasks" agenda ""
+        ((org-agenda-skip-function
+          (lambda nil
+            (org-agenda-skip-entry-if (quote notregexp) "\\=.*\\[#A\\]")))
+         (org-agenda-span 1)
+         (org-agenda-overriding-header "Today's Priority #A tasks: ")))
+       ("u" "Unscheduled TODO entries" alltodo ""
+        ((org-agenda-skip-function
+          (lambda nil
+            (org-agenda-skip-entry-if (quote scheduled) (quote deadline)
+                                      (quote regexp) "\n]+>")))
+         (org-agenda-overriding-header "Unscheduled TODO entries: ")))
+       ))
 
 ;; Optimize indentation for outline-style documents
 (setq org-startup-indented t)
@@ -1001,10 +1133,10 @@
 (setq org-enforce-todo-dependencies t)
 
 ;; Logging state changes
-(setq org-log-done t)
+(setq org-log-done 'time)
 (setq org-log-reschedule (quote time))
 (setq org-log-redeadline (quote time))
-(setq org-log-into-drawer t)
+(setq org-log-into-drawer nil)
 
 (defun mcos/org-skip-if-not-closed-today (&optional subtree)
   "Skip entries that were not closed today.
@@ -1040,6 +1172,11 @@ Skips the current entry unless SUBTREE is not nil."
     (if (= pri-value pri-current)
         end
       nil)))
+
+;; Open org-src editing windows in the current window
+(setq org-src-window-setup 'current-window)
+
+(setq org-export-with-sub-superscripts '{})
 
 ;; GPG Agent Info
 ;; Used by magit when determining whether to sign commits
@@ -1123,6 +1260,7 @@ Skips the current entry unless SUBTREE is not nil."
 (add-hook 'cider-mode-hook #'company-mode)
 
 (require 'clj-refactor)
+(require 'seq-25) ;; temporary workaround for clj-refactor, see https://github.com/clojure-emacs/clj-refactor.el/issues/365
 
 (add-hook 'clojure-mode-hook
 	  (lambda ()
@@ -1171,23 +1309,39 @@ Skips the current entry unless SUBTREE is not nil."
             (setq tab-width 4)
             (setq c-basic-offset 4)))
 
-;;;;;;;;;;;;
+;;;;;;;;;;;;;
 ;; Python ;;
-;;;;;;;;;;;;
+;;;;;;;;;;;;;
 
 (require 'elpy)
-(elpy-enable)
-(elpy-use-ipython)
-
-;; Use jedi as backend for Elpy
-(setq elpy-rpc-backend "jedi")
-;; Set timeout for backend rpc
-(setq elpy-rpc-timeout 3)
-
 (require 'py-autopep8)
-(add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
+(elpy-enable)
+(add-hook 'elpy-mode-hook
+          'py-autopep8-enable-on-save
+          )
+
+;;;;;;;;;;;;;
+;; Thrift ;;
+;;;;;;;;;;;;;
+
+(require 'thrift)
+
+(add-to-list 'auto-mode-alist '("\\.thrift\\'" . thrift-mode))
+
+;;;;;;;;;;;;;
+;; GraphQL ;;
+;;;;;;;;;;;;;
+
+(require 'graphql-mode)
+
 
 ;; do not try to guess the indent offset
 ;; Avoid this message: "Can’t guess python-indent-offset, using defaults: 4"
 ;; http://stackoverflow.com/questions/18778894/emacs-24-3-python-cant-guess-python-indent-offset-using-defaults-4
-(setq python-indent-guess-indent-offset nil)
+;; (setq python-indent-guess-indent-offset nil)
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(default ((t (:inherit nil :stipple nil :background "#192129" :foreground "#8898a9" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 140 :width normal :foundry "nil" :family "Fira Code")))))
