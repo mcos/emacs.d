@@ -56,7 +56,6 @@
                       alchemist
                       nav
                       ox-gfm ;; Export org as github flavored markdown
-                      org-pandoc
                       yaml-mode
                       protobuf-mode
                       gotests
@@ -645,7 +644,7 @@
  '(nav-width 25)
  '(package-selected-packages
    (quote
-    (graphql-mode thrift pretty-mode rainbow-delimiters jinja2-mode planet-theme org-gcal highlight-indentation anaconda-mode elpy py-autopep8 groovy-mode hl-sexp flycheck-clojure clj-refactor evil-paredit helm-cider cider dockerfile-mode gist evil-visualstar gorepl-mode php-extras ede-php-autoload deferred helm-go-package godoctor flycheck-protobuf helm-gtags ggtags php-eldoc yaml-mode xcscope ws-butler web-mode vagrant use-package terraform-mode smartparens smart-mode-line-powerline-theme pydoc-info protobuf-mode powerline-evil plantuml-mode php-refactor-mode php-mode ox-gfm org-pandoc nav minimal-session-saver memoize markdown-mode magit key-chord json-mode js2-refactor js-doc ipython idle-highlight-mode helm-projectile helm-open-github helm-ag gotests gotest go-projectile go-impl flycheck fill-column-indicator exec-path-from-shell evil-surround evil-leader etags-table etags-select elixir-yasnippets el-get ein dash-functional company-go coffee-mode better-defaults base16-theme alchemist airline-themes ag)))
+    (graphql-mode thrift pretty-mode rainbow-delimiters jinja2-mode planet-theme org-gcal highlight-indentation anaconda-mode elpy py-autopep8 groovy-mode hl-sexp flycheck-clojure clj-refactor evil-paredit helm-cider cider dockerfile-mode gist evil-visualstar gorepl-mode php-extras ede-php-autoload deferred helm-go-package godoctor flycheck-protobuf helm-gtags ggtags php-eldoc yaml-mode xcscope ws-butler web-mode vagrant use-package terraform-mode smartparens smart-mode-line-powerline-theme pydoc-info protobuf-mode powerline-evil plantuml-mode php-refactor-mode php-mode ox-gfm nav minimal-session-saver memoize markdown-mode magit key-chord json-mode js2-refactor js-doc ipython idle-highlight-mode helm-projectile helm-open-github helm-ag gotests gotest go-projectile go-impl flycheck fill-column-indicator exec-path-from-shell evil-surround evil-leader etags-table etags-select elixir-yasnippets el-get ein dash-functional company-go coffee-mode better-defaults base16-theme alchemist airline-themes ag)))
  '(safe-local-variable-values
    (quote
     ((dockerfile-image-name . "entities/protoc-go")
