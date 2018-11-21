@@ -1260,7 +1260,6 @@ Skips the current entry unless SUBTREE is not nil."
 (add-hook 'cider-mode-hook #'company-mode)
 
 (require 'clj-refactor)
-(require 'seq-25) ;; temporary workaround for clj-refactor, see https://github.com/clojure-emacs/clj-refactor.el/issues/365
 
 (add-hook 'clojure-mode-hook
 	  (lambda ()
