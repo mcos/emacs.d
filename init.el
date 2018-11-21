@@ -23,6 +23,7 @@
                       go-rename
                       go-projectile
                       php-mode
+                      php-extras
                       company
                       company-go
                       ws-butler
