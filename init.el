@@ -100,6 +100,9 @@
 ;; Don't show the menu bar
 (menu-bar-mode -1)
 
+;; Don't show the tool bar
+(tool-bar-mode -1)
+
 ;; Set up our .emacs.d as a variable
 (setq dotfiles-dir (file-name-directory
                     (or (buffer-file-name) load-file-name)))
