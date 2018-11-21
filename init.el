@@ -776,7 +776,7 @@
 
 ;;; YAsnippet
 (require 'yasnippet)
-(setq yas-snippet-dirs (concat user-emacs-directory "snippets/"))
+(add-to-list 'yas-snippet-dirs (concat user-emacs-directory "snippets/"))
 
 (yas-reload-all)
 
